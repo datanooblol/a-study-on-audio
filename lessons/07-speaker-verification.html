@@ -1,0 +1,143 @@
+<title>07 · Speaker Verification & Identification</title>
+<link rel="stylesheet" href="assets/style.css">
+
+<div class="page">
+  <a class="back-link" href="00-curriculum.html">&larr; Curriculum</a>
+  <span class="tag analysis">Understand audio</span>
+  <h1>07 · Speaker Verification &amp; Identification</h1>
+  <p class="subtitle">Voice biometrics — "is this voice who it claims to be," reusing diarization's embeddings for a different job.</p>
+
+  <h2>Overview</h2>
+  <p>
+    Diarization (lesson 06) groups voices without knowing who they belong to. Verification and
+    identification go the other way: given a known set of enrolled voices, decide whose voice
+    a new sample belongs to — or whether it belongs to any of them. This is voice biometrics,
+    and it reuses the exact same speaker-embedding technology as diarization, just applied to
+    matching a person instead of clustering strangers.
+  </p>
+
+  <h2>Key concepts</h2>
+
+  <h3>Verification vs. identification</h3>
+  <div class="compare">
+    <div>
+      <h4>Verification (1:1)</h4>
+      <p>"Is this <em>you</em>?" Given a claimed identity and a voice sample, compare against
+        that one person's enrolled voiceprint and accept or reject. Used for voice login/2FA.</p>
+    </div>
+    <div>
+      <h4>Identification (1:N)</h4>
+      <p>"Whose voice is this?" Compare a sample against every enrolled voiceprint and return
+        the best match — or, in the open-set case, "none of the above" if nothing matches well
+        enough.</p>
+    </div>
+  </div>
+
+  <h3>Enrollment</h3>
+  <p>
+    Before verification can happen, a person's voice must be <strong>enrolled</strong>:
+    capturing one or more reference utterances and converting them into a stored embedding
+    (a "voiceprint"), often averaged across several samples to reduce noise from any one
+    recording.
+  </p>
+
+  <h3>Speaker embeddings</h3>
+  <p>
+    The same family of embeddings used in diarization, trained specifically to make same-speaker
+    vectors close together and different-speaker vectors far apart:
+  </p>
+  <ul>
+    <li><strong>d-vectors</strong> — taken from a bottleneck layer of a network trained to
+      classify speakers</li>
+    <li><strong>x-vectors</strong> — a time-delay neural network (TDNN) with statistics
+      pooling over frames; the embedding that displaced d-vectors as the standard</li>
+    <li><strong>ECAPA-TDNN</strong> — adds channel attention and multi-scale feature
+      aggregation on top of the x-vector idea; the current default in most open-source
+      toolkits</li>
+  </ul>
+  <p>
+    Matching is typically done with <strong>cosine similarity</strong> between two embeddings,
+    or a learned scoring model like <strong>PLDA</strong> (Probabilistic Linear Discriminant
+    Analysis) for better robustness to channel/recording-condition mismatch.
+  </p>
+
+  <h3>Anti-spoofing &amp; liveness</h3>
+  <div class="callout warning">
+    <span class="callout-label">Why this matters</span>
+    <p>
+      A recorded replay of someone's voice — or, increasingly, a synthetic clone (lessons 09–10)
+      — can fool a naive verification system. Production voice-biometric systems need
+      dedicated <strong>anti-spoofing</strong> detectors trained to distinguish live human
+      speech from replayed or synthetically generated audio. This arms race is exactly why
+      voice cloning technology (lesson 10) raises real security concerns.
+    </p>
+  </div>
+
+  <h2>How it works</h2>
+  <p><strong>Enrollment:</strong></p>
+  <div class="diagram">
+    <div class="step">Reference audio</div>
+    <div class="arrow">&rarr;</div>
+    <div class="step">Speaker embedding</div>
+    <div class="arrow">&rarr;</div>
+    <div class="step">Stored voiceprint</div>
+  </div>
+  <p><strong>Verification:</strong></p>
+  <div class="diagram">
+    <div class="step">Test audio</div>
+    <div class="arrow">&rarr;</div>
+    <div class="step">Speaker embedding</div>
+    <div class="arrow">&rarr;</div>
+    <div class="step">Compare<br><span style="font-weight:400">cosine / PLDA</span></div>
+    <div class="arrow">&rarr;</div>
+    <div class="step">Score vs. threshold<br><span style="font-weight:400">accept / reject</span></div>
+  </div>
+
+  <h2>A little history</h2>
+  <ul class="timeline">
+    <li><span class="era">1990s — GMM-UBM</span>Gaussian Mixture Model / Universal Background
+      Model becomes the standard classical approach: model a speaker as a deviation from a
+      generic "background" voice model.</li>
+    <li><span class="era">2007 — PLDA scoring</span>Prince &amp; Elder introduce PLDA as a
+      more robust way to score similarity between speaker representations.</li>
+    <li><span class="era">2011 — i-vectors</span>Dehak et al. introduce a compact,
+      factor-analysis-based fixed-length representation that becomes dominant for years.</li>
+    <li><span class="era">2018 — x-vectors</span>Snyder et al. show deep, discriminatively
+      trained TDNN embeddings outperform i-vectors, becoming the new standard.</li>
+    <li><span class="era">2020 — ECAPA-TDNN</span>Desplanques et al. push x-vectors further
+      with attention and multi-scale aggregation — today's default in open-source toolkits.</li>
+    <li><span class="era">2015–ongoing — ASVspoof challenges</span>A recurring benchmark
+      series drives anti-spoofing research as synthetic and cloned voices become more
+      convincing.</li>
+  </ul>
+
+  <h2>Tools &amp; libraries</h2>
+  <table>
+    <tr><th>Tool</th><td>Use</td></tr>
+    <tr><td><span class="pill">speechbrain</span></td><td>Pretrained ECAPA-TDNN speaker embedding and verification models</td></tr>
+    <tr><td><span class="pill">pyannote</span></td><td>Speaker embeddings shared between diarization and verification use cases</td></tr>
+    <tr><td><span class="pill">resemblyzer</span></td><td>Lightweight d-vector-style embeddings for quick experimentation</td></tr>
+  </table>
+
+  <h2>Evaluation</h2>
+  <p>
+    <strong>EER (Equal Error Rate)</strong> is the standard metric: the point on the
+    accept/reject threshold curve where the <strong>False Acceptance Rate</strong> (wrongly
+    accepting an impostor) equals the <strong>False Rejection Rate</strong> (wrongly rejecting
+    the real person). A single number summarizing the whole trade-off — lower is better. The
+    full trade-off curve across all thresholds is called a <strong>DET curve</strong>.
+  </p>
+
+  <h2>Further reading</h2>
+  <ul>
+    <li>Dehak et al., "Front-End Factor Analysis for Speaker Verification" (i-vectors, 2011)</li>
+    <li>Snyder et al., "X-Vectors: Robust DNN Embeddings for Speaker Recognition" (2018)</li>
+    <li>Desplanques et al., "ECAPA-TDNN" (2020)</li>
+    <li>ASVspoof challenge series — benchmark for anti-spoofing research</li>
+  </ul>
+
+  <div class="lesson-nav">
+    <a href="06-diarization.html"><span class="dir">Previous</span>06 · Speaker Diarization</a>
+    <a class="next" href="08-emotion-recognition.html"><span class="dir">Next</span>08 · Speech Emotion Recognition</a>
+  </div>
+</div>

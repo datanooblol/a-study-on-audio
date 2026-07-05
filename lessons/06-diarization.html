@@ -1,0 +1,126 @@
+<title>06 · Speaker Diarization</title>
+<link rel="stylesheet" href="assets/style.css">
+
+<div class="page">
+  <a class="back-link" href="00-curriculum.html">&larr; Curriculum</a>
+  <span class="tag analysis">Understand audio</span>
+  <h1>06 · Speaker Diarization</h1>
+  <p class="subtitle">"Who spoke when" — independent of what was actually said.</p>
+
+  <h2>Overview</h2>
+  <p>
+    Diarization answers a question ASR doesn't: in a recording with multiple people, which
+    stretches of audio belong to which speaker? It doesn't need to know who the speakers
+    <em>are</em> (that's verification/identification, lesson 07) — just where "Speaker A" stops
+    and "Speaker B" starts. It's what turns a raw meeting recording into a readable, per-speaker
+    transcript.
+  </p>
+
+  <h2>Key concepts</h2>
+
+  <h3>The standard pipeline: VAD &rarr; embed &rarr; cluster</h3>
+  <ol>
+    <li><strong>VAD</strong> finds the regions that contain speech at all (lesson 03).</li>
+    <li>Those regions are cut into short windows, and a <strong>speaker embedding</strong> is
+      extracted for each one (the same kind of embedding used for speaker verification —
+      a fixed-length vector that captures voice characteristics, not words).</li>
+    <li>Embeddings are <strong>clustered</strong> (commonly agglomerative hierarchical
+      clustering) so that windows from the same speaker end up in the same group — without
+      necessarily knowing in advance how many speakers there are.</li>
+    <li>Cluster assignments are mapped back onto the timeline: "Speaker 1: 0:00–0:12,
+      Speaker 2: 0:12–0:19, …"</li>
+  </ol>
+
+  <h3>Overlapping speech: the hard case</h3>
+  <p>
+    Classic diarization assumes one active speaker per moment. Real conversations interrupt
+    and talk over each other constantly. A pure clustering pipeline can only assign one label
+    per time window, so overlaps get mis-attributed or smeared across a boundary. Two ways
+    around it:
+  </p>
+  <div class="compare">
+    <div>
+      <h4>Overlap detection</h4>
+      <p>A separate detector flags overlapping regions so the system can at least mark "two
+        speakers here" rather than silently guessing one.</p>
+    </div>
+    <div>
+      <h4>End-to-end neural diarization (EEND)</h4>
+      <p>A single network directly predicts, per time step, which of several speakers are
+        active — naturally allowing more than one "yes" at once, without a separate
+        clustering step.</p>
+    </div>
+  </div>
+
+  <h3>Pairing diarization with a transcript</h3>
+  <p>
+    Diarization and ASR usually run as two separate systems that need to be merged: align the
+    diarization timeline's speaker-labeled intervals with the ASR transcript's word-level
+    timestamps to produce a readable "Speaker A: ... / Speaker B: ..." transcript. Small timing
+    mismatches between the two systems are a common source of misattributed words at
+    speaker-change boundaries.
+  </p>
+
+  <h2>How it works</h2>
+  <div class="diagram">
+    <div class="step">Audio</div>
+    <div class="arrow">&rarr;</div>
+    <div class="step">VAD<br><span style="font-weight:400">speech regions</span></div>
+    <div class="arrow">&rarr;</div>
+    <div class="step">Speaker embedding<br><span style="font-weight:400">per window</span></div>
+    <div class="arrow">&rarr;</div>
+    <div class="step">Clustering</div>
+    <div class="arrow">&rarr;</div>
+    <div class="step">Diarized timeline<br><span style="font-weight:400">Speaker A / B / C</span></div>
+  </div>
+
+  <h2>A little history</h2>
+  <ul class="timeline">
+    <li><span class="era">2000s — BIC segmentation + GMM clustering</span>Early diarization
+      (largely for broadcast news, evaluated in NIST Rich Transcription benchmarks) used the
+      Bayesian Information Criterion to find speaker-change points, then clustered segments
+      with Gaussian Mixture Models.</li>
+    <li><span class="era">2010s — i-vectors</span>A compact speaker-representation technique
+      from speaker verification research gets adapted to diarization, improving robustness.</li>
+    <li><span class="era">~2017 — x-vectors</span>Deep neural embeddings ("x-vectors") replace
+      i-vectors as the standard speaker representation, driven by the same embedding advances
+      used in verification (lesson 07).</li>
+    <li><span class="era">2019+ — End-to-end neural diarization</span>EEND-style models learn
+      to output multi-speaker activity directly, finally handling overlapping speech natively
+      rather than as an afterthought.</li>
+    <li><span class="era">2020 — pyannote.audio</span>An open-source toolkit packages these
+      ideas into pretrained, easy-to-use pipelines, becoming a de facto standard for applied
+      diarization work.</li>
+  </ul>
+
+  <h2>Tools &amp; libraries</h2>
+  <table>
+    <tr><th>Tool</th><td>Use</td></tr>
+    <tr><td><span class="pill">pyannote.audio</span></td><td>Pretrained end-to-end diarization pipelines, widely used open-source standard</td></tr>
+    <tr><td><span class="pill">NVIDIA NeMo</span></td><td>Production diarization toolkit, integrates with ASR pipelines</td></tr>
+  </table>
+
+  <h2>Evaluation</h2>
+  <p><strong>DER (Diarization Error Rate)</strong> combines three error types over total reference speech time:</p>
+  <div class="callout">
+    <p style="margin:0; text-align:center; font-family:'SF Mono',Consolas,Menlo,monospace;">
+      DER = (False Alarm + Missed Speech + Speaker Confusion) / Total reference speech time
+    </p>
+  </div>
+  <ul>
+    <li><strong>False alarm</strong> — non-speech labeled as speech</li>
+    <li><strong>Missed speech</strong> — speech labeled as non-speech</li>
+    <li><strong>Speaker confusion</strong> — speech correctly detected but attributed to the wrong speaker</li>
+  </ul>
+
+  <h2>Further reading</h2>
+  <ul>
+    <li>NIST Rich Transcription evaluation series — the original benchmark driving diarization research</li>
+    <li>Fujita et al., "End-to-End Neural Speaker Diarization" (EEND, 2019)</li>
+  </ul>
+
+  <div class="lesson-nav">
+    <a href="05-speech-to-text.html"><span class="dir">Previous</span>05 · Speech-to-Text (ASR)</a>
+    <a class="next" href="07-speaker-verification.html"><span class="dir">Next</span>07 · Speaker Verification &amp; Identification</a>
+  </div>
+</div>

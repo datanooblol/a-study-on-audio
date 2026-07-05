@@ -1,0 +1,156 @@
+<title>09 · Text-to-Speech (TTS)</title>
+<link rel="stylesheet" href="assets/style.css">
+
+<div class="page">
+  <a class="back-link" href="00-curriculum.html">&larr; Curriculum</a>
+  <span class="tag generation">Generate audio</span>
+  <h1>09 · Text-to-Speech (TTS)</h1>
+  <p class="subtitle">Turning text into a waveform — three stages that have been gradually merging into one model.</p>
+
+  <h2>Overview</h2>
+  <p>
+    TTS is the first "generate audio" lesson: instead of extracting information from audio, we
+    produce it. Classic TTS breaks into three fairly independent stages; the story of the
+    field since 2016 has been each stage getting replaced by a neural network, and the stages
+    themselves gradually merging into a single trained model.
+  </p>
+
+  <h2>Key concepts</h2>
+
+  <h3>The three-stage pipeline</h3>
+  <ol>
+    <li><strong>Text normalization</strong> — expand things that aren't read as written:
+      "Dr." &rarr; "Doctor", "3/4" &rarr; "three quarters" (or "March fourth", depending on
+      context) — plus grapheme-to-phoneme (G2P) conversion to resolve pronunciation.</li>
+    <li><strong>Acoustic model</strong> — predicts an intermediate representation (almost
+      always a mel-spectrogram) from the phoneme sequence, modeling duration, pitch, and
+      energy — the prosody of speech.</li>
+    <li><strong>Vocoder</strong> — converts that mel-spectrogram into an actual waveform. This
+      is a genuinely hard inverse problem: computing a mel-spectrogram threw away phase
+      information, so the vocoder has to plausibly reconstruct it.</li>
+  </ol>
+
+  <h3>Why quality historically lagged in each stage</h3>
+  <div class="compare">
+    <div>
+      <h4>Concatenative synthesis</h4>
+      <p>Stitches together fragments of real recorded speech. Individual sounds are natural,
+        but requires a huge recorded corpus and can sound discontinuous at the seams between
+        fragments.</p>
+    </div>
+    <div>
+      <h4>Parametric synthesis</h4>
+      <p>Statistically generates spectral parameters (originally via HMMs) instead of storing
+        audio. Small footprint and smooth, but characteristically "buzzy" or muffled —
+        recognizably synthetic.</p>
+    </div>
+  </div>
+  <p>
+    Neural models replaced both: neural acoustic models (Tacotron, FastSpeech) generate
+    natural prosody directly, and neural vocoders (WaveNet, HiFi-GAN) generate waveforms
+    detailed enough to sound convincingly human.
+  </p>
+
+  <h3>Where zero-shot systems diverge</h3>
+  <p>
+    Modern large-scale systems (Bark, VALL-E-style models) skip the explicit mel-spectrogram
+    pipeline entirely. They treat speech generation as a language-modeling problem over
+    discrete audio tokens (produced by a neural audio codec, e.g. Encodec), and can condition
+    on a few seconds of reference audio to imitate a voice without any fine-tuning — an
+    "in-context learning" approach to voice that leads directly into voice cloning
+    (lesson 10).
+  </p>
+
+  <h2>How it works</h2>
+  <div class="diagram">
+    <div class="step">Text</div>
+    <div class="arrow">&rarr;</div>
+    <div class="step">Normalize + G2P<br><span style="font-weight:400">phoneme sequence</span></div>
+    <div class="arrow">&rarr;</div>
+    <div class="step">Acoustic model<br><span style="font-weight:400">&rarr; mel-spectrogram</span></div>
+    <div class="arrow">&rarr;</div>
+    <div class="step">Vocoder</div>
+    <div class="arrow">&rarr;</div>
+    <div class="step">Waveform</div>
+  </div>
+
+  <div class="svg-figure">
+    <svg viewBox="0 0 400 150" role="img" aria-label="Mel-spectrogram sketch feeding into a vocoder producing a waveform">
+      <rect x="0" y="10" width="180" height="110" rx="8" fill="var(--code-bg)"/>
+      <ellipse cx="35" cy="95" rx="18" ry="9" fill="var(--accent)" opacity="0.85"/>
+      <ellipse cx="35" cy="55" rx="13" ry="6" fill="var(--accent)" opacity="0.45"/>
+      <ellipse cx="90" cy="75" rx="20" ry="10" fill="var(--accent)" opacity="0.85"/>
+      <ellipse cx="90" cy="35" rx="12" ry="6" fill="var(--accent)" opacity="0.4"/>
+      <ellipse cx="145" cy="100" rx="16" ry="8" fill="var(--accent)" opacity="0.8"/>
+      <ellipse cx="145" cy="50" rx="14" ry="6" fill="var(--accent)" opacity="0.45"/>
+      <text x="90" y="135" text-anchor="middle" font-size="11" fill="var(--text-muted)">mel-spectrogram</text>
+      <text x="205" y="70" font-size="18" fill="var(--text-muted)">&rarr;</text>
+      <text x="205" y="86" font-size="10" fill="var(--text-muted)">vocoder</text>
+      <path d="M240,75 C250,40 258,40 264,75 C270,110 278,110 284,75 C290,40 298,40 304,75 C310,110 318,110 324,75 C330,40 338,40 344,75 C350,110 358,110 364,75 C370,40 378,40 384,75 C390,110 398,110 400,75"
+        fill="none" stroke="var(--accent)" stroke-width="2"/>
+      <text x="320" y="135" text-anchor="middle" font-size="11" fill="var(--text-muted)">waveform</text>
+    </svg>
+    <p class="svg-caption">The vocoder's job: turn a picture of "how much energy per frequency,
+      over time" into actual sample values — reconstructing detail (like phase) that the
+      mel-spectrogram never stored.</p>
+  </div>
+
+  <h2>A little history</h2>
+  <ul class="timeline">
+    <li><span class="era">1930s–1980s — Formant &amp; rule-based synthesis</span>Early
+      synthesizers (starting with Bell Labs' Voder, 1939) generate speech from explicit rules
+      about formant frequencies — intelligible but unmistakably robotic.</li>
+    <li><span class="era">1990s–2000s — Concatenative / unit-selection synthesis</span>Systems
+      stitch together fragments of real recorded speech, requiring huge voice corpora.</li>
+    <li><span class="era">2000s — Statistical parametric synthesis</span>HMM-based systems
+      generate spectral parameters statistically — smaller footprint, but characteristically
+      buzzy-sounding.</li>
+    <li><span class="era">2016 — WaveNet</span>DeepMind's autoregressive neural vocoder
+      generates raw audio sample-by-sample, a massive quality leap — but far too slow for
+      real-time use at first.</li>
+    <li><span class="era">2017–2018 — Tacotron / Tacotron 2</span>Attention-based
+      sequence-to-sequence neural acoustic models generate mel-spectrograms directly from
+      text, paired with a neural vocoder.</li>
+    <li><span class="era">2019 — FastSpeech</span>Non-autoregressive acoustic models with
+      explicit duration prediction fix Tacotron's occasional word-skipping/repeating and run
+      much faster.</li>
+    <li><span class="era">2020 — HiFi-GAN</span>A GAN-based vocoder reaches near-WaveNet
+      quality while generating audio in one fast pass — becomes the new default vocoder.</li>
+    <li><span class="era">2021 — VITS</span>Combines the acoustic model and vocoder into one
+      end-to-end model trained jointly with adversarial training, removing the two-stage
+      pipeline.</li>
+    <li><span class="era">2023+ — Zero-shot, token-based TTS</span>Bark and VALL-E-style
+      models generate speech as discrete audio-codec tokens via a language model, enabling
+      zero-shot voice adaptation from seconds of reference audio.</li>
+  </ul>
+
+  <h2>Tools &amp; libraries</h2>
+  <table>
+    <tr><th>Tool</th><td>Use</td></tr>
+    <tr><td><span class="pill">Coqui TTS</span></td><td>Open-source toolkit implementing most of the architectures above (Tacotron2, FastSpeech, VITS, and more)</td></tr>
+    <tr><td><span class="pill">VITS</span></td><td>Reference end-to-end acoustic model + vocoder in one</td></tr>
+    <tr><td><span class="pill">Bark</span></td><td>Zero-shot, token-based generative TTS model</td></tr>
+  </table>
+
+  <h2>Evaluation</h2>
+  <p>
+    <strong>MOS (Mean Opinion Score)</strong> is the historical standard: human listeners rate
+    naturalness on a 1–5 scale, averaged across raters and samples. It's the ground truth the
+    field optimizes toward, despite being slow and expensive to collect (automatic MOS-prediction
+    models exist as a faster proxy). <strong>Intelligibility</strong> is checked by
+    transcribing the synthesized speech with an ASR model and computing WER against the
+    original input text — a proxy for "can this actually be understood."
+  </p>
+
+  <h2>Further reading</h2>
+  <ul>
+    <li>van den Oord et al., "WaveNet: A Generative Model for Raw Audio" (2016)</li>
+    <li>Shen et al., "Natural TTS Synthesis by Conditioning WaveNet on Mel Spectrogram Predictions" (Tacotron 2, 2018)</li>
+    <li>Kim et al., "VITS: Conditional Variational Autoencoder with Adversarial Learning for End-to-End TTS" (2021)</li>
+  </ul>
+
+  <div class="lesson-nav">
+    <a href="08-emotion-recognition.html"><span class="dir">Previous</span>08 · Speech Emotion Recognition</a>
+    <a class="next" href="10-voice-cloning.html"><span class="dir">Next</span>10 · Voice Cloning</a>
+  </div>
+</div>

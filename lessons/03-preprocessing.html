@@ -1,0 +1,155 @@
+<title>03 · Audio Preprocessing & Manipulation</title>
+<link rel="stylesheet" href="assets/style.css">
+
+<div class="page">
+  <a class="back-link" href="00-curriculum.html">&larr; Curriculum</a>
+  <span class="tag foundations">Foundations</span>
+  <h1>03 · Audio Preprocessing &amp; Manipulation</h1>
+  <p class="subtitle">The "data cleaning" step of the audio world — shaping raw signal before any model or feature extractor sees it.</p>
+
+  <h2>Overview</h2>
+  <p>
+    Raw recordings are messy: silence at the start and end, inconsistent loudness between
+    files, background hiss, a rumble from a desk mic. Preprocessing is the set of standard
+    steps that turn a messy raw recording into something consistent enough for a model — or a
+    human labeler — to work with reliably. Get this step wrong and every downstream model
+    inherits the problem.
+  </p>
+
+  <h2>Key concepts</h2>
+
+  <h3>Loudness normalization</h3>
+  <div class="compare">
+    <div>
+      <h4>Peak normalization</h4>
+      <p>Scales a clip so its loudest single sample hits a target level (e.g. -1 dBFS).
+        Simple, but two clips peak-normalized to the same level can still sound very
+        differently loud overall.</p>
+    </div>
+    <div>
+      <h4>Loudness normalization (RMS / LUFS)</h4>
+      <p>Targets <em>perceived</em> loudness averaged over time, not just the single loudest
+        sample. LUFS (Loudness Units Full Scale) is the broadcast/streaming standard — this is
+        what you want for consistent training data.</p>
+    </div>
+  </div>
+
+  <h3>Silence trimming &amp; voice activity detection (VAD)</h3>
+  <p>
+    VAD classifies each short frame of audio as "speech" or "not speech." At its simplest,
+    that's an energy threshold (frames quieter than X are silence); more robust VADs are small
+    trained classifiers that hold up under background noise. Used to trim dead air from clip
+    edges, and to split long recordings into speech segments before anything else runs on them.
+  </p>
+
+  <h3>Denoising &amp; filtering</h3>
+  <ul>
+    <li><strong>High-pass filter</strong> — removes low-frequency rumble and DC offset (desk
+      vibration, mic handling noise, HVAC hum) while leaving speech frequencies intact.</li>
+    <li><strong>Low-pass filter</strong> — removes high-frequency hiss and out-of-band noise.</li>
+    <li><strong>Spectral / learned denoising</strong> — classic methods estimate a noise
+      profile and subtract it in the frequency domain (spectral subtraction/gating); modern
+      approaches use a small neural network trained to separate speech from noise directly.</li>
+  </ul>
+
+  <h3>Framing &amp; windowing</h3>
+  <p>
+    Most processing (including the STFT from lesson 01) doesn't operate on the whole clip at
+    once — it slides a short <strong>frame</strong> (e.g. 25 ms) across the audio with some
+    overlap (a <strong>hop</strong> of e.g. 10 ms), applying a tapered <strong>window
+    function</strong> (commonly Hann) to each frame before analyzing it. The taper avoids the
+    abrupt edges a hard rectangular cut would introduce, which would otherwise smear energy
+    across frequencies that were never actually present.
+  </p>
+
+  <div class="svg-figure">
+    <svg viewBox="0 0 400 90" role="img" aria-label="Overlapping analysis windows sliding across a waveform">
+      <path d="M0,45 C20,20 40,20 60,45 C80,70 100,70 120,45 C140,20 160,20 180,45 C200,70 220,70 240,45 C260,20 280,20 300,45 C320,70 340,70 360,45 C380,20 400,20 400,45"
+        fill="none" stroke="var(--text-muted)" stroke-width="1.5" opacity="0.45"/>
+      <g fill="var(--accent)" opacity="0.22">
+        <rect x="0" y="5" width="90" height="80" rx="6"/>
+        <rect x="60" y="5" width="90" height="80" rx="6"/>
+        <rect x="120" y="5" width="90" height="80" rx="6"/>
+        <rect x="180" y="5" width="90" height="80" rx="6"/>
+        <rect x="240" y="5" width="90" height="80" rx="6"/>
+        <rect x="300" y="5" width="90" height="80" rx="6"/>
+      </g>
+      <text x="200" y="20" text-anchor="middle" font-size="10" fill="var(--text-muted)">overlapping windows, hop &lt; window length</text>
+    </svg>
+    <p class="svg-caption">Each shaded band is one analysis window; windows overlap so no part
+      of the signal is under-analyzed at the frame edges.</p>
+  </div>
+
+  <h3>Augmentation</h3>
+  <p>
+    Deliberately distorting training audio to make models robust to conditions they'll meet in
+    the real world:
+  </p>
+  <ul>
+    <li><strong>Pitch shift</strong> — raise/lower pitch without changing duration</li>
+    <li><strong>Time-stretch</strong> — change speaking speed without changing pitch</li>
+    <li><strong>Noise injection</strong> — mix in background noise (café, traffic, static)</li>
+    <li><strong>SpecAugment</strong> — mask random blocks of time or frequency directly on the
+      spectrogram, forcing the model to not over-rely on any single band or moment</li>
+  </ul>
+
+  <h2>How it works: a typical pipeline</h2>
+  <div class="diagram">
+    <div class="step">Raw audio</div>
+    <div class="arrow">&rarr;</div>
+    <div class="step">Trim silence<br><span style="font-weight:400">(VAD)</span></div>
+    <div class="arrow">&rarr;</div>
+    <div class="step">Normalize<br><span style="font-weight:400">loudness</span></div>
+    <div class="arrow">&rarr;</div>
+    <div class="step">Filter /<br>denoise</div>
+    <div class="arrow">&rarr;</div>
+    <div class="step">Frame &amp;<br>window</div>
+    <div class="arrow">&rarr;</div>
+    <div class="step">Ready for<br>feature extraction</div>
+  </div>
+
+  <h2>A little history</h2>
+  <ul class="timeline">
+    <li><span class="era">1979 — Spectral subtraction</span>Steven Boll's classic algorithm
+      estimates a noise spectrum during silence and subtracts it from the signal — the
+      ancestor of most classical denoising.</li>
+    <li><span class="era">1990s — Statistical VAD</span>Energy- and statistical-model-based
+      voice activity detectors become standard in telephony (e.g. codec silence suppression).</li>
+    <li><span class="era">2017 — RNNoise</span>A small recurrent network shows learned
+      denoising can outperform classical spectral methods, running in real time on modest
+      hardware.</li>
+    <li><span class="era">2019 — SpecAugment</span>Google shows that simple time/frequency
+      masking on spectrograms, with no extra data, meaningfully improves ASR robustness — now
+      a default in most speech training pipelines.</li>
+  </ul>
+
+  <h2>Tools &amp; libraries</h2>
+  <table>
+    <tr><th>Tool</th><td>Use</td></tr>
+    <tr><td><span class="pill">librosa</span></td><td>Trimming, resampling, classic effects and filters</td></tr>
+    <tr><td><span class="pill">torchaudio</span></td><td>Tensor-native transforms and SoX-based effects, integrates with training loops</td></tr>
+    <tr><td><span class="pill">noisereduce</span></td><td>Spectral-gating noise reduction</td></tr>
+    <tr><td><span class="pill">webrtcvad / pyannote</span></td><td>Voice activity detection</td></tr>
+    <tr><td><span class="pill">audiomentations</span></td><td>Augmentation pipelines (pitch/time/noise) for training data</td></tr>
+  </table>
+
+  <h2>Evaluation</h2>
+  <p>
+    <strong>SNR (Signal-to-Noise Ratio)</strong> is the primary metric — the ratio of desired
+    signal power to noise power, in decibels, comparing before/after denoising. For perceptual
+    quality of speech enhancement specifically, <span class="pill">PESQ</span> and
+    <span class="pill">STOI</span> are common standardized metrics that correlate better with
+    human judgment than raw SNR.
+  </p>
+
+  <h2>Further reading</h2>
+  <ul>
+    <li>Boll, "Suppression of Acoustic Noise in Speech Using Spectral Subtraction" (1979)</li>
+    <li>Park et al., "SpecAugment: A Simple Data Augmentation Method for ASR" (2019)</li>
+  </ul>
+
+  <div class="lesson-nav">
+    <a href="02-formats-and-conversion.html"><span class="dir">Previous</span>02 · Audio Formats &amp; Conversion</a>
+    <a class="next" href="04-feature-extraction.html"><span class="dir">Next</span>04 · Feature Extraction &amp; Audio Embeddings</a>
+  </div>
+</div>

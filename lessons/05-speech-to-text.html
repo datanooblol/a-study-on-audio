@@ -1,0 +1,159 @@
+<title>05 · Speech-to-Text (ASR)</title>
+<link rel="stylesheet" href="assets/style.css">
+
+<div class="page">
+  <a class="back-link" href="00-curriculum.html">&larr; Curriculum</a>
+  <span class="tag analysis">Understand audio</span>
+  <h1>05 · Speech-to-Text (ASR)</h1>
+  <p class="subtitle">From HMM-GMM pipelines to a single Transformer that just transcribes.</p>
+
+  <h2>Overview</h2>
+  <p>
+    Automatic Speech Recognition (ASR) converts spoken audio into text. It's one of the
+    oldest AI problems (research goes back to the 1950s) and one of the most commercially
+    important — captions, voice assistants, meeting transcription, dictation. The field's
+    history is really the story of two separately-trained components (an acoustic model and a
+    language model) gradually merging into one network trained end-to-end.
+  </p>
+
+  <h2>Key concepts</h2>
+
+  <h3>Acoustic model vs. language model</h3>
+  <p>
+    Classically, ASR split into two models glued together by a search algorithm:
+  </p>
+  <div class="compare">
+    <div>
+      <h4>Acoustic model</h4>
+      <p>Maps audio features (lesson 04) to probabilities over sounds/phonemes — "what does
+        this audio sound like it contains?"</p>
+    </div>
+    <div>
+      <h4>Language model</h4>
+      <p>Scores how probable a word sequence is in the target language — "is this a sentence
+        someone would actually say?" Helps resolve acoustic ambiguity (e.g. "recognize speech"
+        vs. "wreck a nice beach").</p>
+    </div>
+  </div>
+  <p>
+    A decoding search (historically Viterbi/beam search over an HMM) combined both scores to
+    find the most likely text. Modern end-to-end models still implicitly do both jobs — they
+    just learn them jointly from paired audio-text data instead of training and combining two
+    separate models.
+  </p>
+
+  <h3>CTC vs. sequence-to-sequence decoding</h3>
+  <div class="compare">
+    <div>
+      <h4>CTC (Connectionist Temporal Classification)</h4>
+      <p>A loss function that lets a model output one prediction per audio frame — including a
+        special "blank" symbol — without needing frame-by-frame text labels. Repeated symbols
+        and blanks collapse into the final text. Fast, non-autoregressive, but assumes
+        outputs are independent given the audio.</p>
+    </div>
+    <div>
+      <h4>Attention-based seq2seq</h4>
+      <p>Treats ASR like translation: an encoder processes the audio, a decoder generates text
+        one token at a time, attending back over the audio as needed. Naturally models
+        dependencies between output tokens, at the cost of slower, autoregressive decoding.</p>
+    </div>
+  </div>
+
+  <h3>Where Whisper fits</h3>
+  <p>
+    Whisper is an attention-based encoder-decoder Transformer, notable less for architectural
+    novelty and more for scale and data diversity: it was trained on 680,000 hours of
+    weakly-supervised, multilingual, multitask audio scraped from the web. That scale gives it
+    strong robustness to accents, background noise, and domain shift — problems earlier
+    systems needed careful, task-specific engineering to handle.
+  </p>
+
+  <h3>Multilingual &amp; noisy-audio challenges</h3>
+  <ul>
+    <li>Accent and dialect variation within a single "language"</li>
+    <li>Code-switching (speakers mixing languages mid-sentence)</li>
+    <li>Low-resource languages with little transcribed training data</li>
+    <li>Background noise, overlapping speakers, far-field/reverberant recordings</li>
+    <li>Domain-specific vocabulary (medical, legal, technical jargon)</li>
+  </ul>
+
+  <h2>How it works</h2>
+  <p><strong>Classical pipeline:</strong></p>
+  <div class="diagram">
+    <div class="step">Audio features</div>
+    <div class="arrow">&rarr;</div>
+    <div class="step">Acoustic model<br><span style="font-weight:400">GMM-HMM / DNN</span></div>
+    <div class="arrow">&rarr;</div>
+    <div class="step">Decode search<br><span style="font-weight:400">+ language model</span></div>
+    <div class="arrow">&rarr;</div>
+    <div class="step">Text</div>
+  </div>
+  <p><strong>End-to-end (modern):</strong></p>
+  <div class="diagram">
+    <div class="step">Audio</div>
+    <div class="arrow">&rarr;</div>
+    <div class="step">Encoder</div>
+    <div class="arrow">&rarr;</div>
+    <div class="step">CTC or attention decoder</div>
+    <div class="arrow">&rarr;</div>
+    <div class="step">Text</div>
+  </div>
+
+  <h2>A little history</h2>
+  <ul class="timeline">
+    <li><span class="era">1950s–70s — Template matching</span>Isolated-word systems compare
+      incoming audio to stored templates using dynamic time warping.</li>
+    <li><span class="era">1980s–2000s — HMM-GMM era</span>Hidden Markov Models with Gaussian
+      Mixture acoustic models, combined with n-gram language models, become the dominant
+      paradigm for decades of research and commercial systems.</li>
+    <li><span class="era">~2012 — Deep acoustic models</span>Deep neural networks replace
+      GMMs as the acoustic model in hybrid DNN-HMM systems — one of deep learning's first
+      major wins outside computer vision.</li>
+    <li><span class="era">2014–2015 — End-to-end arrives</span>CTC-based systems (e.g. Baidu's
+      Deep Speech) and attention-based seq2seq models (Listen, Attend and Spell) show a single
+      network can replace the whole classical pipeline.</li>
+    <li><span class="era">2020 — Self-supervised pretraining</span>wav2vec2 shows
+      pretraining on unlabeled audio then fine-tuning on small labeled sets can rival
+      fully-supervised systems, a big win for low-resource languages.</li>
+    <li><span class="era">2022 — Whisper</span>OpenAI releases a single multilingual,
+      multitask Transformer trained on massive weakly-labeled web audio, setting a new
+      practical bar for general-purpose, robust ASR.</li>
+  </ul>
+
+  <h2>Tools &amp; libraries</h2>
+  <table>
+    <tr><th>Tool</th><td>Use</td></tr>
+    <tr><td><span class="pill">whisper</span></td><td>OpenAI's general-purpose multilingual ASR model</td></tr>
+    <tr><td><span class="pill">faster-whisper</span></td><td>Optimized (CTranslate2) inference for Whisper models</td></tr>
+    <tr><td><span class="pill">wav2vec2</span></td><td>Self-supervised encoder, fine-tunable for specific domains/languages</td></tr>
+    <tr><td><span class="pill">NVIDIA NeMo</span></td><td>Production-oriented toolkit for training/serving ASR models</td></tr>
+    <tr><td><span class="pill">Kaldi</span></td><td>The classical HMM-based toolkit — still used in research and legacy production systems</td></tr>
+  </table>
+
+  <h2>Evaluation</h2>
+  <p>
+    <strong>WER (Word Error Rate)</strong> is the standard metric:
+  </p>
+  <div class="callout">
+    <p style="margin:0; text-align:center; font-family:'SF Mono',Consolas,Menlo,monospace;">
+      WER = (Substitutions + Deletions + Insertions) / Total words in reference
+    </p>
+  </div>
+  <p>
+    Lower is better; 0% is a perfect transcript. For languages without clear word boundaries
+    (e.g. Chinese, Japanese), <strong>CER (Character Error Rate)</strong> is used instead,
+    computed the same way at the character level.
+  </p>
+
+  <h2>Further reading</h2>
+  <ul>
+    <li>Graves et al., "Connectionist Temporal Classification" (2006)</li>
+    <li>Chan et al., "Listen, Attend and Spell" (2015)</li>
+    <li>Radford et al., "Robust Speech Recognition via Large-Scale Weak Supervision" (Whisper, 2022)</li>
+  </ul>
+
+  <div class="lesson-nav">
+    <a href="04-feature-extraction.html"><span class="dir">Previous</span>04 · Feature Extraction &amp; Audio Embeddings</a>
+    <a class="next" href="06-diarization.html"><span class="dir">Next</span>06 · Speaker Diarization</a>
+  </div>
+</div>

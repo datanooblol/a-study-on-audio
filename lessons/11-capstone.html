@@ -1,0 +1,115 @@
+<title>11 · Composing an Audio AI Pipeline</title>
+<link rel="stylesheet" href="assets/style.css">
+
+<div class="page">
+  <a class="back-link" href="00-curriculum.html">&larr; Curriculum</a>
+  <span class="tag capstone">Capstone</span>
+  <h1>11 · Composing an Audio AI Pipeline</h1>
+  <p class="subtitle">No new technique here — just putting lessons 01–10 together, and being honest about how their errors compound.</p>
+
+  <h2>Overview</h2>
+  <p>
+    Real audio products are rarely a single model. A meeting-transcription tool needs
+    preprocessing, ASR, <em>and</em> diarization, merged together. A call-center analytics
+    product adds speaker verification and emotion tracking on top of that. This lesson maps
+    real use cases onto the modules that solve each piece, and closes with what phase 2 (code)
+    will actually build first.
+  </p>
+
+  <h2>Worked example: meeting transcription with speaker labels</h2>
+  <p>The most common composed pipeline in this curriculum — turning a raw recording into "Speaker A: ... / Speaker B: ..." text.</p>
+
+  <div class="diagram">
+    <div class="step">Raw recording</div>
+    <div class="arrow">&rarr;</div>
+    <div class="step">Preprocessing<br><span style="font-weight:400">lessons 02–03</span></div>
+  </div>
+  <div class="diagram">
+    <div class="step">Preprocessed audio</div>
+    <div class="arrow">&rarr;</div>
+    <div class="step">ASR<br><span style="font-weight:400">lesson 05</span></div>
+    <div class="arrow">&rarr;</div>
+    <div class="step">Transcript +<br>word timestamps</div>
+  </div>
+  <div class="diagram">
+    <div class="step">Preprocessed audio</div>
+    <div class="arrow">&rarr;</div>
+    <div class="step">Diarization<br><span style="font-weight:400">lesson 06</span></div>
+    <div class="arrow">&rarr;</div>
+    <div class="step">Speaker timeline</div>
+  </div>
+  <div class="diagram">
+    <div class="step">Transcript +<br>speaker timeline</div>
+    <div class="arrow">&rarr;</div>
+    <div class="step">Merge / align</div>
+    <div class="arrow">&rarr;</div>
+    <div class="step">Per-speaker<br>transcript</div>
+    <div class="arrow">&rarr;</div>
+    <div class="step">+ Speaker ID<br><span style="font-weight:400">lesson 07 (optional)</span></div>
+    <div class="arrow">&rarr;</div>
+    <div class="step">+ Emotion tag<br><span style="font-weight:400">lesson 08 (optional)</span></div>
+  </div>
+
+  <h2>Mapping other use cases to modules</h2>
+  <table>
+    <tr><th>Use case</th><th>Modules involved</th></tr>
+    <tr><td>Meeting transcription</td><td>Preprocessing (02–03) &rarr; ASR (05) + Diarization (06), merged</td></tr>
+    <tr><td>Call-center analytics</td><td>Above, plus Speaker Verification (07) for caller identity/fraud checks and Emotion Recognition (08) tracked per turn over a call</td></tr>
+    <tr><td>Voice assistant / spoken dialogue agent</td><td>ASR (05) &rarr; (an LLM/NLU component, outside this curriculum) &rarr; TTS (09), optionally with a custom cloned voice (10)</td></tr>
+    <tr><td>Podcast/dataset cleanup at scale</td><td>Format conversion (02) &rarr; Preprocessing (03) &rarr; Feature extraction (04) as a quality-control/filtering step</td></tr>
+  </table>
+
+  <h2>Where errors compound</h2>
+  <div class="callout warning">
+    <span class="callout-label">Pipeline error is a product, not a sum</span>
+    <p>
+      Chaining a 95%-accurate diarization step with a 95%-accurate ASR step does not give a
+      95%-accurate combined transcript. Errors compound: a small timing misalignment between
+      diarization and ASR misattributes words right at every speaker-change boundary; ASR
+      substitution errors corrupt any downstream text-based emotion or sentiment fusion;
+      preprocessing artifacts (lesson 03) ripple into every stage built on top of them.
+      Composing a pipeline means budgeting for this — measuring the combined output, not just
+      each component in isolation.
+    </p>
+  </div>
+  <p>
+    A real evaluation metric for exactly this problem exists: <strong>cpWER (concatenated
+    minimum-permutation Word Error Rate)</strong>, used in the CHiME speech-recognition
+    challenges, concatenates each speaker's words (trying every speaker-label permutation) and
+    computes WER on the result — scoring the ASR-plus-diarization pipeline as a whole, rather
+    than each piece separately.
+  </p>
+
+  <h2>Tools &amp; orchestration</h2>
+  <p>
+    No new libraries here — a composed pipeline reuses the tools from every earlier lesson
+    (Whisper/NeMo for ASR, pyannote for diarization, speechbrain for verification/emotion,
+    Coqui/VITS for TTS) glued together by whatever orchestration code phase 2 builds.
+  </p>
+
+  <h2>Evaluation</h2>
+  <p>
+    There's no single pipeline-wide metric — it's task-specific. For meeting transcription,
+    <strong>cpWER</strong> (above) is the closest thing to a standard. For a voice assistant,
+    end-to-end task success rate (did the user get what they asked for) matters more than any
+    individual component's score.
+  </p>
+
+  <h2>What's next: code phase 2</h2>
+  <p>
+    With the concepts in place, phase 2 implements one of these pipelines end to end —
+    starting with meeting transcription, since it's the pipeline that exercises the most of
+    what this curriculum covered: preprocessing, ASR, and diarization, merged and evaluated
+    together.
+  </p>
+
+  <h2>Further reading</h2>
+  <ul>
+    <li>CHiME Speech Separation and Recognition Challenge series — combined ASR + diarization evaluation in realistic multi-speaker settings</li>
+  </ul>
+
+  <div class="lesson-nav">
+    <a href="10-voice-cloning.html"><span class="dir">Previous</span>10 · Voice Cloning</a>
+    <a class="next" href="00-curriculum.html"><span class="dir">Back to</span>Curriculum overview</a>
+  </div>
+</div>

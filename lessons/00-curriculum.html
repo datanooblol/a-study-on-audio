@@ -1,0 +1,281 @@
+<title>AI + Audio — Curriculum</title>
+<link rel="stylesheet" href="assets/style.css">
+
+<div class="page">
+
+  <p class="eyebrow">Study plan</p>
+  <h1>AI + Audio</h1>
+  <p class="subtitle">
+    A self-study curriculum on how AI is applied to audio: understanding it
+    (speech-to-text, diarization, speaker ID, emotion) and generating it
+    (text-to-speech, voice cloning) — built on a shared foundation of digital
+    signal processing.
+  </p>
+
+  <div class="card">
+    <h3 style="margin-top:0">How this curriculum works</h3>
+    <p>
+      <strong>Phase 1 (this repo, right now):</strong> eleven conceptual
+      lessons, each a self-contained HTML page with diagrams, history, and the
+      evaluation metric practitioners actually use. No code yet — the goal is
+      a correct mental model of each task before touching a library.
+    </p>
+    <p>
+      <strong>Phase 2 (later):</strong> once the lesson set feels solid, we
+      deep-dive into code — notebooks that implement each pipeline.
+    </p>
+    <p>
+      Written for a data scientist who already knows ML/AI fundamentals but is
+      new to the audio-specific parts: sampling, spectrograms, vocoders, and
+      the metrics unique to speech and audio tasks.
+    </p>
+  </div>
+
+  <h2>Learning path</h2>
+  <p>Four stages, in teaching order. Later modules lean on representations introduced in earlier ones.</p>
+
+  <div class="diagram">
+    <div class="step" style="background:color-mix(in srgb, var(--tag-foundations) 16%, var(--bg-elevated)); color:var(--tag-foundations);">01–04<br>Foundations</div>
+    <div class="arrow">&rarr;</div>
+    <div class="step" style="background:color-mix(in srgb, var(--tag-analysis) 16%, var(--bg-elevated)); color:var(--tag-analysis);">05–08<br>Understand audio</div>
+    <div class="arrow">&rarr;</div>
+    <div class="step" style="background:color-mix(in srgb, var(--tag-generation) 16%, var(--bg-elevated)); color:var(--tag-generation);">09–10<br>Generate audio</div>
+    <div class="arrow">&rarr;</div>
+    <div class="step" style="background:color-mix(in srgb, var(--tag-capstone) 16%, var(--bg-elevated)); color:var(--tag-capstone);">11<br>Capstone</div>
+  </div>
+
+  <p style="color:var(--text-muted); font-size:0.9rem;">
+    <strong>Why this order:</strong> foundations (sampling theory, safe format
+    conversion, preprocessing, feature extraction) feed every task that
+    follows, so they come first — format conversion specifically sits right
+    after the sampling-theory lesson, since you need to know how to get audio
+    into a target format safely before preprocessing or any model touches it.
+    Within "understand audio," tasks are ordered by how directly they reuse
+    the previous one's output (ASR → diarization → verification all lean on
+    similar embeddings; emotion recognition closes out analysis since it can
+    consume a transcript too). Generation comes last because TTS and voice
+    cloning are the most complex pipelines, and voice cloning specifically
+    builds on TTS.
+  </p>
+
+  <h2>Syllabus</h2>
+
+  <div class="card">
+    <span class="tag foundations">Foundations</span>
+    <span class="status">planned</span>
+    <h3 style="margin-top:10px;"><a href="01-foundations.html">01 · Foundations of Digital Audio</a></h3>
+    <p>How sound becomes numbers — sampling, quantization, and the time/frequency
+      duality that every downstream model relies on.</p>
+    <ul>
+      <li>Sample rate, bit depth, Nyquist frequency</li>
+      <li>Waveform vs. spectrogram — reading both, knowing when to use which</li>
+      <li>The Fourier Transform / STFT, intuitively (no heavy math)</li>
+      <li>Audio file formats, and lossy vs. lossless codecs</li>
+      <li>Choosing a sample rate, bit depth, and format for a task — and what real-world datasets actually ship as</li>
+    </ul>
+    <table>
+      <tr><th>Task</th><th>Typical sample rate</th><th>Bit depth</th><th>Format</th></tr>
+      <tr><td>ASR / STT</td><td>16 kHz</td><td>16-bit</td><td>WAV (PCM) or FLAC</td></tr>
+      <tr><td>TTS / vocoder training</td><td>22.05–24 kHz (up to 48 kHz for HiFi vocoders)</td><td>16-bit</td><td>WAV</td></tr>
+      <tr><td>Diarization / speaker ID</td><td>16 kHz</td><td>16-bit</td><td>WAV</td></tr>
+      <tr><td>Music / general audio</td><td>44.1–48 kHz</td><td>16–24-bit</td><td>WAV or FLAC</td></tr>
+      <tr><td>Archival / source recordings</td><td>highest available (48–96 kHz)</td><td>24-bit</td><td>WAV or FLAC, lossless — downsample per task later, never upsample from a lossy source</td></tr>
+    </table>
+    <p style="color:var(--text-muted); font-size:0.85rem;">
+      Rule of thumb: match the sample rate a pretrained model was trained on
+      (most speech models standardize on 16 kHz) rather than assuming "higher
+      is better" — resolution a model was never trained on is wasted storage,
+      not free accuracy.
+    </p>
+    <table>
+      <tr><th>Tools you'd reach for</th><td><span class="pill">librosa</span> <span class="pill">torchaudio</span> <span class="pill">soundfile</span> <span class="pill">Audacity</span></td></tr>
+      <tr><th>Evaluation</th><td>n/a — conceptual foundation</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <span class="tag foundations">Foundations</span>
+    <span class="status">planned</span>
+    <h3 style="margin-top:10px;"><a href="02-formats-and-conversion.html">02 · Audio Formats &amp; Conversion</a></h3>
+    <p>The practical map of containers and codecs you'll actually run into,
+      and how to move audio between them without silently degrading it.</p>
+    <ul>
+      <li>Container vs. codec — why <span class="pill">.wav</span> and <span class="pill">.mp3</span> aren't the same kind of thing, and where FLAC / OGG / M4A / AAC / Opus fit</li>
+      <li>Lossless vs. lossy, and why repeated lossy→lossy re-encoding compounds quality loss ("generation loss")</li>
+      <li>Safe sample-rate conversion (proper anti-aliasing resampling) vs. naive resampling artifacts</li>
+      <li>Bit-depth conversion and dithering when going from 24-bit to 16-bit</li>
+      <li>Stereo→mono downmixing pitfalls (phase cancellation)</li>
+      <li>A do/don't checklist for round-tripping audio through multiple tools and pipelines</li>
+    </ul>
+    <table>
+      <tr><th>Do</th><th>Don't</th></tr>
+      <tr><td>Keep one lossless master; convert working copies from it</td><td>Re-encode an already-lossy file into another lossy format "to save space"</td></tr>
+      <tr><td>Resample with a proper filter (ffmpeg / sox / librosa's resampler)</td><td>Naively drop or duplicate samples to change rate</td></tr>
+      <tr><td>Dither when reducing bit depth</td><td>Truncate bits and call it done</td></tr>
+      <tr><td>Check sample rate / channel count match what a pretrained model expects</td><td>Assume "it's audio, any format works"</td></tr>
+    </table>
+    <table>
+      <tr><th>Tools you'd reach for</th><td><span class="pill">ffmpeg</span> <span class="pill">sox</span> <span class="pill">soundfile</span> <span class="pill">pydub</span></td></tr>
+      <tr><th>Evaluation</th><td>n/a — sanity-check with a spectrogram diff or a listening test before/after conversion</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <span class="tag foundations">Foundations</span>
+    <span class="status">planned</span>
+    <h3 style="margin-top:10px;"><a href="03-preprocessing.html">03 · Audio Preprocessing &amp; Manipulation</a></h3>
+    <p>Cleaning and shaping raw audio before it reaches a model — the "data
+      cleaning" step of the audio world.</p>
+    <ul>
+      <li>Resampling, mono/stereo conversion</li>
+      <li>Loudness normalization, silence trimming (voice activity detection)</li>
+      <li>Denoising and filtering (high-pass / low-pass)</li>
+      <li>Augmentation: pitch shift, time-stretch, noise injection — and why it matters for robustness</li>
+    </ul>
+    <table>
+      <tr><th>Tools you'd reach for</th><td><span class="pill">librosa</span> <span class="pill">torchaudio</span> <span class="pill">noisereduce</span> <span class="pill">pydub</span> <span class="pill">ffmpeg</span></td></tr>
+      <tr><th>Evaluation</th><td>SNR (signal-to-noise ratio)</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <span class="tag foundations">Foundations</span>
+    <span class="status">planned</span>
+    <h3 style="margin-top:10px;"><a href="04-feature-extraction.html">04 · Feature Extraction &amp; Audio Embeddings</a></h3>
+    <p>Turning cleaned audio into the numeric representations every downstream
+      model actually consumes.</p>
+    <ul>
+      <li>MFCCs, mel-spectrograms, chroma, pitch/F0 — what each captures</li>
+      <li>Hand-crafted features vs. learned embeddings (wav2vec2, HuBERT, CLAP)</li>
+      <li>Why almost every task below starts from the same handful of representations</li>
+    </ul>
+    <table>
+      <tr><th>Tools you'd reach for</th><td><span class="pill">librosa</span> <span class="pill">torchaudio</span> <span class="pill">speechbrain</span> <span class="pill">transformers</span></td></tr>
+      <tr><th>Evaluation</th><td>n/a — bridges into every task's own metric below</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <span class="tag analysis">Understand audio</span>
+    <span class="status">planned</span>
+    <h3 style="margin-top:10px;"><a href="05-speech-to-text.html">05 · Speech-to-Text (ASR)</a></h3>
+    <p>Converting spoken audio into text — from HMM-GMM pipelines to
+      end-to-end transformer models like Whisper.</p>
+    <ul>
+      <li>Acoustic model vs. language model, and why end-to-end models blurred that line</li>
+      <li>CTC vs. sequence-to-sequence decoding</li>
+      <li>Where Whisper-style models fit in that history</li>
+      <li>Multilingual and noisy-audio challenges</li>
+    </ul>
+    <table>
+      <tr><th>Tools you'd reach for</th><td><span class="pill">whisper</span> <span class="pill">faster-whisper</span> <span class="pill">wav2vec2</span> <span class="pill">NeMo</span></td></tr>
+      <tr><th>Evaluation</th><td>WER (Word Error Rate)</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <span class="tag analysis">Understand audio</span>
+    <span class="status">planned</span>
+    <h3 style="margin-top:10px;"><a href="06-diarization.html">06 · Speaker Diarization</a></h3>
+    <p>Answering "who spoke when" in multi-speaker audio, independent of what
+      was said.</p>
+    <ul>
+      <li>The VAD → speaker embedding → clustering pipeline</li>
+      <li>Overlapping speech as the hard case</li>
+      <li>How diarization output pairs with an ASR transcript</li>
+    </ul>
+    <table>
+      <tr><th>Tools you'd reach for</th><td><span class="pill">pyannote.audio</span> <span class="pill">NeMo</span></td></tr>
+      <tr><th>Evaluation</th><td>DER (Diarization Error Rate)</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <span class="tag analysis">Understand audio</span>
+    <span class="status">planned</span>
+    <h3 style="margin-top:10px;"><a href="07-speaker-verification.html">07 · Speaker Verification &amp; Identification</a></h3>
+    <p>Answering "is this voice who it claims to be" — reusing diarization's
+      embeddings, but for enrollment/matching instead of clustering.</p>
+    <ul>
+      <li>Verification (1:1 match) vs. identification (1:N lookup)</li>
+      <li>Speaker embeddings: d-vectors, x-vectors, ECAPA-TDNN</li>
+      <li>Anti-spoofing and liveness — why voice biometrics need it</li>
+    </ul>
+    <table>
+      <tr><th>Tools you'd reach for</th><td><span class="pill">speechbrain</span> <span class="pill">pyannote</span> <span class="pill">ECAPA-TDNN</span></td></tr>
+      <tr><th>Evaluation</th><td>EER (Equal Error Rate)</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <span class="tag analysis">Understand audio</span>
+    <span class="status">planned</span>
+    <h3 style="margin-top:10px;"><a href="08-emotion-recognition.html">08 · Speech Emotion Recognition</a></h3>
+    <p>Detecting affect and paralinguistic signal in speech — how something
+      was said, not what was said.</p>
+    <ul>
+      <li>Categorical (happy/sad/angry…) vs. dimensional (valence-arousal) models</li>
+      <li>Common datasets: RAVDESS, IEMOCAP, CREMA-D</li>
+      <li>Acoustic cues (pitch variance, energy, speaking rate) vs. learned embeddings</li>
+      <li>Multimodal fusion with transcript/text signal</li>
+    </ul>
+    <table>
+      <tr><th>Tools you'd reach for</th><td><span class="pill">speechbrain</span> <span class="pill">wav2vec2 fine-tunes</span> <span class="pill">openSMILE</span></td></tr>
+      <tr><th>Evaluation</th><td>Accuracy / F1 per emotion class (task-dependent)</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <span class="tag generation">Generate audio</span>
+    <span class="status">planned</span>
+    <h3 style="margin-top:10px;"><a href="09-text-to-speech.html">09 · Text-to-Speech (TTS)</a></h3>
+    <p>Generating natural speech from text via a text normalizer, an acoustic
+      model, and a vocoder working together.</p>
+    <ul>
+      <li>The three-stage pipeline: text normalization → acoustic model → vocoder</li>
+      <li>History: concatenative → parametric → neural (Tacotron/FastSpeech) → neural vocoders (WaveNet/HiFi-GAN) → end-to-end (VITS)</li>
+      <li>Where modern zero-shot systems (Bark, VALL-E-style) diverge from that pipeline</li>
+    </ul>
+    <table>
+      <tr><th>Tools you'd reach for</th><td><span class="pill">Coqui TTS</span> <span class="pill">VITS</span> <span class="pill">Bark</span></td></tr>
+      <tr><th>Evaluation</th><td>MOS (Mean Opinion Score), intelligibility (WER of resynthesis)</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <span class="tag generation">Generate audio</span>
+    <span class="status">planned</span>
+    <h3 style="margin-top:10px;"><a href="10-voice-cloning.html">10 · Voice Cloning</a></h3>
+    <p>Adapting a TTS system to speak in a specific person's voice, from a few
+      minutes of reference audio down to a few seconds.</p>
+    <ul>
+      <li>Speaker-embedding conditioning vs. fine-tuning the whole model</li>
+      <li>Few-shot vs. zero-shot cloning</li>
+      <li>Ethical and consent considerations — the module most likely to be misused</li>
+    </ul>
+    <table>
+      <tr><th>Tools you'd reach for</th><td><span class="pill">Coqui TTS</span> <span class="pill">RVC</span> <span class="pill">YourTTS</span></td></tr>
+      <tr><th>Evaluation</th><td>Speaker similarity (embedding cosine similarity), MOS</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <span class="tag capstone">Capstone</span>
+    <span class="status">planned</span>
+    <h3 style="margin-top:10px;"><a href="11-capstone.html">11 · Composing an Audio AI Pipeline</a></h3>
+    <p>Combining the pieces — e.g. diarize, transcribe per speaker, tag emotion
+      per turn, identify known speakers — into one working pipeline.</p>
+    <ul>
+      <li>Mapping a real use case (meeting transcription, call-center analytics) to the modules that solve each piece</li>
+      <li>Reasoning about where errors compound across a pipeline</li>
+      <li>Preview of what code phase 2 will build</li>
+    </ul>
+  </div>
+
+  <hr>
+  <p style="color:var(--text-muted); font-size:0.85rem;">
+    Lessons are built one at a time — links above will 404 until each page
+    exists. See <span class="pill">CLAUDE.md</span> for lesson-page conventions.
+  </p>
+
+</div>

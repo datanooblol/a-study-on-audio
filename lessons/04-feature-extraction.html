@@ -1,0 +1,137 @@
+<title>04 · Feature Extraction & Audio Embeddings</title>
+<link rel="stylesheet" href="assets/style.css">
+
+<div class="page">
+  <a class="back-link" href="00-curriculum.html">&larr; Curriculum</a>
+  <span class="tag foundations">Foundations</span>
+  <h1>04 · Feature Extraction &amp; Audio Embeddings</h1>
+  <p class="subtitle">The bridge between "cleaned audio" and what a model actually consumes.</p>
+
+  <h2>Overview</h2>
+  <p>
+    A cleaned waveform is still just a long list of numbers. Almost no model — classical or
+    neural — learns directly from raw samples at 16,000 numbers per second. Instead, audio
+    gets converted into a more compact, informative representation first: a hand-crafted
+    <em>feature</em> like a mel-spectrogram or MFCC, or a learned <em>embedding</em> from a
+    pretrained model. Every task later in this curriculum — transcription, diarization,
+    verification, emotion recognition — starts from one of a small handful of these
+    representations.
+  </p>
+
+  <h2>Key concepts</h2>
+
+  <h3>Mel-spectrogram</h3>
+  <p>
+    Start from the STFT spectrogram (lesson 01). Human pitch perception isn't linear — we
+    distinguish low frequencies far more finely than high ones. The <strong>mel scale</strong>
+    reshapes the frequency axis to match that perception, via a bank of triangular filters
+    (a <strong>mel filterbank</strong>) that are narrow and closely spaced at low frequencies
+    and wide and sparse at high ones. The result, a <strong>mel-spectrogram</strong>, is the
+    default input/output representation for most modern speech and TTS models.
+  </p>
+
+  <h3>MFCCs (Mel-Frequency Cepstral Coefficients)</h3>
+  <p>
+    Take the log of a mel-spectrogram, then apply a Discrete Cosine Transform (DCT) to
+    decorrelate it into a compact set of coefficients — typically 13 to 40 per frame, versus
+    dozens of mel bands. MFCCs were the default feature for decades of classical speech and
+    speaker recognition systems (GMM-HMM era) and remain a fast, effective baseline feature
+    today.
+  </p>
+
+  <h3>Chroma &amp; pitch (F0)</h3>
+  <ul>
+    <li><strong>Chroma features</strong> fold spectral energy into the 12 pitch classes of the
+      musical octave (C, C&#9839;, D, …) — mainly used for music analysis (key, chord detection),
+      less so for speech.</li>
+    <li><strong>Pitch / F0 (fundamental frequency)</strong> tracks the perceived pitch of a
+      voice over time — central to prosody, emotion, and TTS naturalness.</li>
+  </ul>
+
+  <h3>Hand-crafted features vs. learned embeddings</h3>
+  <div class="compare">
+    <div>
+      <h4>Hand-crafted (mel-spectrogram, MFCC, chroma)</h4>
+      <p>Computed by a fixed mathematical formula. Fast, interpretable, no training required —
+        but they encode a human's assumptions about what matters, not what a specific task
+        actually needs.</p>
+    </div>
+    <div>
+      <h4>Learned embeddings (wav2vec2, HuBERT, WavLM, CLAP)</h4>
+      <p>A neural network pretrained on huge amounts of unlabeled audio produces contextual
+        vector representations — the audio equivalent of BERT/GPT embeddings for text.
+        Fine-tune a small head on top for a specific task instead of engineering features by
+        hand.</p>
+    </div>
+  </div>
+
+  <h2>How it works</h2>
+  <div class="diagram">
+    <div class="step">Waveform</div>
+    <div class="arrow">&rarr;</div>
+    <div class="step">STFT<br><span style="font-weight:400">spectrogram</span></div>
+    <div class="arrow">&rarr;</div>
+    <div class="step">Mel filterbank</div>
+    <div class="arrow">&rarr;</div>
+    <div class="step">Mel-spectrogram</div>
+    <div class="arrow">&rarr;</div>
+    <div class="step">log + DCT<br><span style="font-weight:400">&rarr; MFCCs</span></div>
+  </div>
+  <div class="diagram">
+    <div class="step">Waveform</div>
+    <div class="arrow">&rarr;</div>
+    <div class="step">Pretrained encoder<br><span style="font-weight:400">wav2vec2 / HuBERT</span></div>
+    <div class="arrow">&rarr;</div>
+    <div class="step">Contextual embedding<br><span style="font-weight:400">per frame</span></div>
+  </div>
+  <p style="color:var(--text-muted); font-size:0.9rem;">
+    The mel-spectrogram path feeds classical pipelines and most TTS vocoders. The learned-embedding
+    path feeds most modern ASR, diarization, verification, and emotion models — often the
+    <em>same</em> pretrained encoder is reused across all of them, just with a different small
+    head trained on top.
+  </p>
+
+  <h2>A little history</h2>
+  <ul class="timeline">
+    <li><span class="era">1980 — MFCCs</span>Davis &amp; Mermelstein introduce
+      Mel-Frequency Cepstral Coefficients, which become the default feature for speech
+      recognition for the next three decades.</li>
+    <li><span class="era">~2012 — Neural acoustic models</span>DNN-HMM hybrid systems start
+      replacing GMMs as the classifier on top of MFCC/mel features, the first big deep
+      learning win in ASR.</li>
+    <li><span class="era">2019–2021 — Self-supervised learning</span>wav2vec, wav2vec2, and
+      HuBERT show that pretraining directly on raw audio (no labels) produces representations
+      that transfer across many audio tasks, the same way BERT/GPT did for text.</li>
+    <li><span class="era">2022+ — Audio-text joint embeddings</span>Models like CLAP learn a
+      shared embedding space for audio and text, enabling zero-shot audio classification and
+      retrieval.</li>
+  </ul>
+
+  <h2>Tools &amp; libraries</h2>
+  <table>
+    <tr><th>Tool</th><td>Use</td></tr>
+    <tr><td><span class="pill">librosa</span></td><td>Mel-spectrograms, MFCCs, chroma, pitch (e.g. the pYIN algorithm)</td></tr>
+    <tr><td><span class="pill">torchaudio</span></td><td>Tensor-native feature transforms for training pipelines</td></tr>
+    <tr><td><span class="pill">transformers</span></td><td>Pretrained wav2vec2 / HuBERT / CLAP encoders</td></tr>
+    <tr><td><span class="pill">speechbrain</span></td><td>Ready-made embedding extraction for speech tasks</td></tr>
+  </table>
+
+  <h2>Evaluation</h2>
+  <p style="color:var(--text-muted)">
+    n/a directly — features and embeddings are judged indirectly by how well the downstream
+    task performs (each later lesson's own metric). Benchmarks like <span class="pill">SUPERB</span>
+    exist specifically to compare learned embeddings across many downstream tasks at once.
+  </p>
+
+  <h2>Further reading</h2>
+  <ul>
+    <li>Davis &amp; Mermelstein, "Comparison of Parametric Representations for Monosyllabic Word Recognition" (1980) — the original MFCC paper</li>
+    <li>Baevski et al., "wav2vec 2.0" (2020)</li>
+    <li>SUPERB benchmark — comparing self-supervised speech representations across tasks</li>
+  </ul>
+
+  <div class="lesson-nav">
+    <a href="03-preprocessing.html"><span class="dir">Previous</span>03 · Audio Preprocessing &amp; Manipulation</a>
+    <a class="next" href="05-speech-to-text.html"><span class="dir">Next</span>05 · Speech-to-Text (ASR)</a>
+  </div>
+</div>

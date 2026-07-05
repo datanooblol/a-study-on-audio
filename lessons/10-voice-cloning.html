@@ -1,0 +1,134 @@
+<title>10 · Voice Cloning</title>
+<link rel="stylesheet" href="assets/style.css">
+
+<div class="page">
+  <a class="back-link" href="00-curriculum.html">&larr; Curriculum</a>
+  <span class="tag generation">Generate audio</span>
+  <h1>10 · Voice Cloning</h1>
+  <p class="subtitle">Adapting TTS to speak in a specific person's voice — and the technology it borrows straight from speaker verification.</p>
+
+  <h2>Overview</h2>
+  <p>
+    Voice cloning takes the TTS pipeline from lesson 09 and conditions it on a specific
+    person's voice instead of a generic one, using anywhere from a few minutes down to a few
+    seconds of their reference audio. The core trick is a direct callback to lesson 07: the
+    same kind of speaker embedding used to <em>verify</em> a voice can be reused to
+    <em>condition</em> a generative model on that voice instead.
+  </p>
+
+  <h2>Key concepts</h2>
+
+  <h3>Embedding conditioning vs. fine-tuning</h3>
+  <div class="compare">
+    <div>
+      <h4>Speaker-embedding conditioning (zero/few-shot)</h4>
+      <p>Extract a speaker embedding from a short reference clip (seconds), feed it into a
+        multi-speaker TTS model that was already trained across many voices. No extra
+        training at inference time — fast, but similarity to the target voice is
+        approximate.</p>
+    </div>
+    <div>
+      <h4>Fine-tuning</h4>
+      <p>Further train a pretrained TTS model's parameters on a target speaker's own
+        recordings (minutes of audio, more compute and time). Produces a much closer voice
+        and speaking-style match, at real training cost per speaker.</p>
+    </div>
+  </div>
+  <p>
+    <strong>Zero-shot</strong> cloning means no training step at all for a new voice — just
+    conditioning (e.g. YourTTS, VALL-E-style models). <strong>Few-shot</strong> means a light
+    fine-tuning pass on a small amount of target-speaker data.
+  </p>
+
+  <h3>Voice conversion: a different approach</h3>
+  <p>
+    Voice cloning (above) is text-to-speech in a specific voice. <strong>Voice
+    conversion</strong> (e.g. RVC — Retrieval-based Voice Conversion) is audio-to-audio
+    instead: it takes existing audio — someone's singing or speech — and re-renders it in a
+    target speaker's timbre while preserving the original content, pitch contour, and rhythm.
+    No text or TTS model involved at all.
+  </p>
+
+  <div class="callout warning">
+    <span class="callout-label">Ethical &amp; consent considerations</span>
+    <p>
+      This is the module most likely to be misused. Cloning a voice without consent enables
+      impersonation, fraud (voice-phishing scam calls), and non-consensual deepfake audio.
+      Any real project touching this should require explicit consent from the speaker being
+      cloned, consider disclosure/watermarking of AI-generated audio, and be aware that the
+      anti-spoofing techniques from lesson 07 exist specifically to defend against what this
+      lesson makes possible.
+    </p>
+  </div>
+
+  <h2>How it works</h2>
+  <p><strong>Zero-shot cloning:</strong></p>
+  <div class="diagram">
+    <div class="step">Reference audio<br><span style="font-weight:400">seconds</span></div>
+    <div class="arrow">&rarr;</div>
+    <div class="step">Speaker encoder<br><span style="font-weight:400">(lesson 07's embeddings)</span></div>
+    <div class="arrow">&rarr;</div>
+    <div class="step">Conditioned<br>multi-speaker TTS</div>
+    <div class="arrow">&rarr;</div>
+    <div class="step">Cloned voice output</div>
+  </div>
+  <p><strong>Fine-tuning:</strong></p>
+  <div class="diagram">
+    <div class="step">Reference audio<br><span style="font-weight:400">minutes</span></div>
+    <div class="arrow">&rarr;</div>
+    <div class="step">Fine-tune pretrained<br>TTS model</div>
+    <div class="arrow">&rarr;</div>
+    <div class="step">Speaker-specific model</div>
+    <div class="arrow">&rarr;</div>
+    <div class="step">Cloned voice output</div>
+  </div>
+
+  <h2>A little history</h2>
+  <ul class="timeline">
+    <li><span class="era">2018 — SV2TTS</span>Jia et al., "Transfer Learning from Speaker
+      Verification to Multispeaker TTS," shows a speaker-verification embedding network can
+      directly condition a TTS model on a new voice — the technique that underlies most
+      modern voice cloning.</li>
+    <li><span class="era">2021 — YourTTS</span>Extends the VITS architecture (lesson 09) to
+      zero-shot, multilingual voice cloning from a short reference clip.</li>
+    <li><span class="era">2023 — VALL-E</span>Microsoft demonstrates high-fidelity zero-shot
+      cloning from as little as 3 seconds of reference audio, treating voice cloning as a
+      language-modeling problem over audio tokens.</li>
+    <li><span class="era">2023 — RVC popularization</span>Retrieval-based Voice Conversion
+      becomes widely used in open-source communities, particularly for singing voice
+      conversion.</li>
+    <li><span class="era">2023–ongoing — Regulatory response</span>As cloning quality crosses
+      into "convincing enough to scam or deceive," regulators begin responding directly — for
+      example the US FCC's 2024 ruling classifying AI-voice robocalls under existing
+      robocall law.</li>
+  </ul>
+
+  <h2>Tools &amp; libraries</h2>
+  <table>
+    <tr><th>Tool</th><td>Use</td></tr>
+    <tr><td><span class="pill">Coqui TTS</span></td><td>Includes a voice-cloning mode built on YourTTS-style architectures</td></tr>
+    <tr><td><span class="pill">RVC</span></td><td>Retrieval-based voice conversion (audio-to-audio, not TTS)</td></tr>
+    <tr><td><span class="pill">YourTTS</span></td><td>Zero-shot multilingual voice cloning model</td></tr>
+  </table>
+
+  <h2>Evaluation</h2>
+  <p>
+    <strong>Speaker similarity</strong> — cosine similarity between a speaker-verification
+    embedding (lesson 07) of the cloned output and of the real target voice — measures how
+    close the clone actually sounds to the target. <strong>MOS</strong> (lesson 09) is still
+    used alongside it to measure general naturalness, since a clone can be highly similar to
+    the target speaker yet still sound robotic.
+  </p>
+
+  <h2>Further reading</h2>
+  <ul>
+    <li>Jia et al., "Transfer Learning from Speaker Verification to Multispeaker Text-To-Speech Synthesis" (2018)</li>
+    <li>Casanova et al., "YourTTS: Towards Zero-Shot Multi-Speaker TTS" (2021)</li>
+    <li>Wang et al., "Neural Codec Language Models are Zero-Shot Text to Speech Synthesizers" (VALL-E, 2023)</li>
+  </ul>
+
+  <div class="lesson-nav">
+    <a href="09-text-to-speech.html"><span class="dir">Previous</span>09 · Text-to-Speech (TTS)</a>
+    <a class="next" href="11-capstone.html"><span class="dir">Next</span>11 · Composing an Audio AI Pipeline</a>
+  </div>
+</div>

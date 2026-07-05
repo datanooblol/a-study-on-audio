@@ -1,0 +1,199 @@
+<title>01 · Foundations of Digital Audio</title>
+<link rel="stylesheet" href="assets/style.css">
+
+<div class="page">
+  <a class="back-link" href="00-curriculum.html">&larr; Curriculum</a>
+  <span class="tag foundations">Foundations</span>
+  <h1>01 · Foundations of Digital Audio</h1>
+  <p class="subtitle">How sound becomes numbers — and the vocabulary every later lesson assumes you already have.</p>
+
+  <h2>Overview</h2>
+  <p>
+    A microphone captures a continuous, analog vibration in the air. A computer can only store
+    discrete numbers. Everything in this curriculum — Whisper transcribing a meeting, a TTS
+    model producing a voice, a diarization model figuring out who spoke when — starts from the
+    same conversion: turning that continuous wave into an array of numbers, and often into a
+    picture of frequency-over-time called a spectrogram. This lesson is the vocabulary for
+    that conversion.
+  </p>
+
+  <h2>Key concepts</h2>
+
+  <h3>Sampling &amp; sample rate</h3>
+  <p>
+    <strong>Sampling</strong> measures the amplitude of a sound wave at regular intervals.
+    <strong>Sample rate</strong> is how many measurements are taken per second, in Hertz (Hz).
+    A 16,000 Hz (16 kHz) recording has 16,000 numbers for every second of audio.
+  </p>
+  <div class="callout">
+    <span class="callout-label">Nyquist–Shannon theorem</span>
+    <p>
+      To faithfully represent a frequency, you must sample at <strong>at least twice</strong>
+      that frequency. A sample rate of 16 kHz can represent frequencies up to 8 kHz (its
+      <em>Nyquist frequency</em>). Human speech's important content sits mostly below 8 kHz,
+      which is why 16 kHz is the default for speech models. Music and general audio need more
+      headroom for high-frequency detail, which is why "CD quality" is 44.1 kHz.
+    </p>
+  </div>
+
+  <div class="svg-figure">
+    <svg viewBox="0 0 400 130" role="img" aria-label="A continuous sine wave with discrete sample points marked along it">
+      <path d="M0,60 C12.5,10 37.5,10 50,60 C62.5,110 87.5,110 100,60 C112.5,10 137.5,10 150,60 C162.5,110 187.5,110 200,60 C212.5,10 237.5,10 250,60 C262.5,110 287.5,110 300,60 C312.5,10 337.5,10 350,60 C362.5,110 387.5,110 400,60"
+        fill="none" stroke="var(--text-muted)" stroke-width="2" opacity="0.55"/>
+      <line x1="0" y1="118" x2="400" y2="118" stroke="var(--border)" stroke-width="1"/>
+      <g stroke="var(--accent)" stroke-width="1.5">
+        <line x1="0" y1="118" x2="0" y2="60"/><line x1="25" y1="118" x2="25" y2="22.5"/>
+        <line x1="50" y1="118" x2="50" y2="60"/><line x1="75" y1="118" x2="75" y2="97.5"/>
+        <line x1="100" y1="118" x2="100" y2="60"/><line x1="125" y1="118" x2="125" y2="22.5"/>
+        <line x1="150" y1="118" x2="150" y2="60"/><line x1="175" y1="118" x2="175" y2="97.5"/>
+        <line x1="200" y1="118" x2="200" y2="60"/><line x1="225" y1="118" x2="225" y2="22.5"/>
+        <line x1="250" y1="118" x2="250" y2="60"/><line x1="275" y1="118" x2="275" y2="97.5"/>
+        <line x1="300" y1="118" x2="300" y2="60"/><line x1="325" y1="118" x2="325" y2="22.5"/>
+        <line x1="350" y1="118" x2="350" y2="60"/><line x1="375" y1="118" x2="375" y2="97.5"/>
+        <line x1="400" y1="118" x2="400" y2="60"/>
+      </g>
+      <g fill="var(--accent)">
+        <circle cx="0" cy="60" r="3.5"/><circle cx="25" cy="22.5" r="3.5"/>
+        <circle cx="50" cy="60" r="3.5"/><circle cx="75" cy="97.5" r="3.5"/>
+        <circle cx="100" cy="60" r="3.5"/><circle cx="125" cy="22.5" r="3.5"/>
+        <circle cx="150" cy="60" r="3.5"/><circle cx="175" cy="97.5" r="3.5"/>
+        <circle cx="200" cy="60" r="3.5"/><circle cx="225" cy="22.5" r="3.5"/>
+        <circle cx="250" cy="60" r="3.5"/><circle cx="275" cy="97.5" r="3.5"/>
+        <circle cx="300" cy="60" r="3.5"/><circle cx="325" cy="22.5" r="3.5"/>
+        <circle cx="350" cy="60" r="3.5"/><circle cx="375" cy="97.5" r="3.5"/>
+        <circle cx="400" cy="60" r="3.5"/>
+      </g>
+    </svg>
+    <p class="svg-caption">The continuous wave (faint line) only ever exists in the recording
+      as the sampled points (dots). Everything the computer knows about the sound is in those
+      numbers.</p>
+  </div>
+
+  <h3>Bit depth &amp; quantization</h3>
+  <p>
+    Sample <em>rate</em> is how often you measure; <strong>bit depth</strong> is how precisely
+    each measurement is stored. 16-bit audio stores each sample as one of 65,536 possible
+    amplitude values; 24-bit gives ~16.7 million. More bits mean a larger <strong>dynamic
+    range</strong> (quietest to loudest sound represented without distortion) — roughly
+    6 dB of dynamic range per bit.
+  </p>
+  <table>
+    <tr><th>Bit depth</th><th>Values per sample</th><th>Dynamic range</th><th>Typical use</th></tr>
+    <tr><td>8-bit</td><td>256</td><td>~48 dB</td><td>Legacy telephony, lo-fi effects</td></tr>
+    <tr><td>16-bit</td><td>65,536</td><td>~96 dB</td><td>CD audio, most speech datasets</td></tr>
+    <tr><td>24-bit</td><td>~16.7M</td><td>~144 dB</td><td>Studio recording, mastering headroom</td></tr>
+    <tr><td>32-bit float</td><td>continuous</td><td>effectively unbounded</td><td>DSP/ML processing buffers (no clipping while processing)</td></tr>
+  </table>
+
+  <h3>Time domain vs. frequency domain</h3>
+  <div class="compare">
+    <div>
+      <h4>Waveform (time domain)</h4>
+      <p>Amplitude vs. time. Good for seeing loudness, silence, and timing — but a vowel and a
+        consonant can look like similar squiggles.</p>
+    </div>
+    <div>
+      <h4>Spectrogram (frequency domain)</h4>
+      <p>Frequency vs. time, with color/intensity showing energy. Good for seeing <em>what</em>
+        sound is present — vowels, pitch, harmonics — which is what most audio ML models
+        actually learn from.</p>
+    </div>
+  </div>
+
+  <div class="svg-figure">
+    <svg viewBox="0 0 400 160" role="img" aria-label="Sketch of a spectrogram showing formant bands moving over time">
+      <rect width="400" height="160" rx="10" fill="var(--code-bg)"/>
+      <ellipse cx="40" cy="120" rx="22" ry="10" fill="var(--accent)" opacity="0.85"/>
+      <ellipse cx="40" cy="70" rx="16" ry="7" fill="var(--accent)" opacity="0.45"/>
+      <ellipse cx="115" cy="95" rx="26" ry="13" fill="var(--accent)" opacity="0.85"/>
+      <ellipse cx="115" cy="45" rx="15" ry="7" fill="var(--accent)" opacity="0.4"/>
+      <ellipse cx="195" cy="130" rx="20" ry="9" fill="var(--accent)" opacity="0.8"/>
+      <ellipse cx="195" cy="60" rx="17" ry="8" fill="var(--accent)" opacity="0.5"/>
+      <ellipse cx="275" cy="85" rx="27" ry="14" fill="var(--accent)" opacity="0.85"/>
+      <ellipse cx="275" cy="35" rx="13" ry="6" fill="var(--accent)" opacity="0.4"/>
+      <ellipse cx="350" cy="110" rx="20" ry="10" fill="var(--accent)" opacity="0.8"/>
+      <text x="200" y="152" text-anchor="middle" font-size="11" fill="var(--text-muted)">time &#8594;</text>
+      <text x="10" y="18" font-size="11" fill="var(--text-muted)">freq &#8593;</text>
+    </svg>
+    <p class="svg-caption">A spectrogram: darker/brighter bands ("formants") track how a speech
+      sound's dominant frequencies move over time. This is produced by the Fourier Transform,
+      below.</p>
+  </div>
+
+  <h3>The Fourier Transform &amp; STFT</h3>
+  <p>
+    The <strong>Fourier Transform</strong> is the math that says: any complex waveform can be
+    decomposed into a sum of simple sine waves at different frequencies, phases, and
+    amplitudes. Feed it a chunk of audio, and it tells you "how much of each frequency is
+    present" — that's a <em>spectrum</em>.
+  </p>
+  <p>
+    A single spectrum only describes one moment. The <strong>Short-Time Fourier Transform
+    (STFT)</strong> slides a small window across the signal, computing a spectrum for each
+    window position. Stack those spectra side by side over time and you get a
+    <strong>spectrogram</strong> — the frequency-vs-time picture almost every audio model in
+    this curriculum is either built from or trained to produce.
+  </p>
+
+  <h3>Choosing a format for your own work</h3>
+  <p>When you go looking for real datasets or record your own, match the sample rate, bit
+    depth, and format to the task rather than defaulting to "highest quality possible":</p>
+  <table>
+    <tr><th>Task</th><th>Typical sample rate</th><th>Bit depth</th><th>Format</th></tr>
+    <tr><td>ASR / STT</td><td>16 kHz</td><td>16-bit</td><td>WAV (PCM) or FLAC</td></tr>
+    <tr><td>TTS / vocoder training</td><td>22.05–24 kHz (up to 48 kHz for HiFi vocoders)</td><td>16-bit</td><td>WAV</td></tr>
+    <tr><td>Diarization / speaker ID</td><td>16 kHz</td><td>16-bit</td><td>WAV</td></tr>
+    <tr><td>Music / general audio</td><td>44.1–48 kHz</td><td>16–24-bit</td><td>WAV or FLAC</td></tr>
+    <tr><td>Archival / source recordings</td><td>highest available (48–96 kHz)</td><td>24-bit</td><td>WAV or FLAC, lossless</td></tr>
+  </table>
+  <div class="callout">
+    <span class="callout-label">Rule of thumb</span>
+    <p>Match the rate a pretrained model was trained on (most speech models standardize on
+      16 kHz internally, even if you feed them something else). Extra resolution the model was
+      never trained on is wasted storage, not free accuracy. Keep an archival master at the
+      highest quality you captured, and derive task-specific copies from it — more on exactly
+      how to do that safely in the next lesson.</p>
+  </div>
+
+  <h2>A little history</h2>
+  <ul class="timeline">
+    <li><span class="era">1928 / 1949 — Nyquist &amp; Shannon</span>Harry Nyquist and later
+      Claude Shannon formalized the sampling theorem that still governs every digital
+      recording made today.</li>
+    <li><span class="era">1960s–70s — Digital telephony</span>Phone networks standardized on
+      8 kHz sampling (later mu-law/A-law encoded) — just enough for intelligible speech over
+      a narrow channel. That legacy is why some speech datasets and legacy telephony/IVR
+      systems still use 8 kHz.</li>
+    <li><span class="era">1982 — Compact Disc</span>44.1 kHz / 16-bit stereo PCM became the
+      consumer "CD quality" standard, chosen to comfortably exceed the ~20 kHz upper limit of
+      human hearing.</li>
+    <li><span class="era">2010s–today — ML-driven standardization</span>Modern speech
+      models (Whisper, wav2vec2, HuBERT) converged on 16 kHz mono as the working rate for
+      speech — high enough for intelligibility, small enough to keep models and datasets
+      fast to train on.</li>
+  </ul>
+
+  <h2>Tools &amp; libraries</h2>
+  <table>
+    <tr><th>Tool</th><td>Use</td></tr>
+    <tr><td><span class="pill">librosa</span></td><td>Python audio analysis — loading, resampling, STFT/spectrograms, features</td></tr>
+    <tr><td><span class="pill">torchaudio</span></td><td>PyTorch-native audio I/O and transforms, integrates directly with model training</td></tr>
+    <tr><td><span class="pill">soundfile</span></td><td>Fast, simple reading/writing of WAV/FLAC and other libsndfile formats</td></tr>
+    <tr><td><span class="pill">Audacity</span></td><td>Free GUI editor — good for visually inspecting waveforms/spectrograms by hand</td></tr>
+  </table>
+
+  <h2>Evaluation</h2>
+  <p style="color:var(--text-muted)">n/a — this lesson is conceptual foundation. Every later
+    lesson's metric (WER, MOS, DER, EER, …) is built on top of these representations.</p>
+
+  <h2>Further reading</h2>
+  <ul>
+    <li>Nyquist–Shannon sampling theorem (overview of the theory behind sample rates)</li>
+    <li><span class="pill">librosa</span> documentation — "Audio and music signal analysis in Python"</li>
+  </ul>
+
+  <div class="lesson-nav">
+    <span></span>
+    <a class="next" href="02-formats-and-conversion.html"><span class="dir">Next</span>02 · Audio Formats &amp; Conversion</a>
+  </div>
+</div>

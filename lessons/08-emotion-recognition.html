@@ -1,0 +1,132 @@
+<title>08 · Speech Emotion Recognition</title>
+<link rel="stylesheet" href="assets/style.css">
+
+<div class="page">
+  <a class="back-link" href="00-curriculum.html">&larr; Curriculum</a>
+  <span class="tag analysis">Understand audio</span>
+  <h1>08 · Speech Emotion Recognition</h1>
+  <p class="subtitle">How something was said, not what was said.</p>
+
+  <h2>Overview</h2>
+  <p>
+    Speech Emotion Recognition (SER) reads the paralinguistic signal in speech — pitch,
+    energy, rhythm, voice quality — to infer the speaker's emotional state, independent of the
+    words themselves. It closes out the "understand audio" arc: where ASR extracts
+    <em>what</em> was said, SER (often paired with the transcript) extracts <em>how</em>.
+    Common uses: call-center sentiment analytics, mental health monitoring, and adaptive voice
+    assistants.
+  </p>
+
+  <h2>Key concepts</h2>
+
+  <h3>Categorical vs. dimensional emotion models</h3>
+  <div class="compare">
+    <div>
+      <h4>Categorical</h4>
+      <p>Discrete labels — happy, sad, angry, neutral, fear, disgust, surprise — following
+        Ekman's theory of basic emotions. Intuitive and easy to label, but forces messy,
+        blended emotional states into one bucket.</p>
+    </div>
+    <div>
+      <h4>Dimensional (valence-arousal)</h4>
+      <p>Emotion as a point in continuous space: <strong>valence</strong> (negative &harr;
+        positive) and <strong>arousal</strong> (calm &harr; excited), sometimes with a third
+        <strong>dominance</strong> axis. More nuanced, but harder to annotate consistently.</p>
+    </div>
+  </div>
+
+  <h3>Common datasets</h3>
+  <table>
+    <tr><th>Dataset</th><td>Notes</td></tr>
+    <tr><td><span class="pill">RAVDESS</span></td><td>Actors reading fixed scripted lines in different emotions — clean, controlled, but "acted" emotion</td></tr>
+    <tr><td><span class="pill">IEMOCAP</span></td><td>Dyadic (two-person) scripted and improvised interactions, multimodal (audio + video + transcript)</td></tr>
+    <tr><td><span class="pill">CREMA-D</span></td><td>Crowd-sourced actors across varied demographics reading the same lines with different emotions</td></tr>
+  </table>
+  <div class="callout warning">
+    <span class="callout-label">A known limitation</span>
+    <p>Most benchmark datasets are <strong>acted</strong> (actors performing an emotion on
+      cue), which doesn't fully match <strong>spontaneous</strong> real-world emotional
+      speech. A model that does well on RAVDESS won't automatically generalize to a real,
+      unscripted call-center recording — the acted-vs-spontaneous domain gap is a persistent
+      open problem in this field.</p>
+  </div>
+
+  <h3>Acoustic cues vs. learned embeddings</h3>
+  <p>
+    Classical SER hand-engineers acoustic correlates of emotion: pitch (F0) range and
+    variance, energy/intensity, speaking rate, and voice-quality measures like jitter and
+    shimmer (cycle-to-cycle instability in pitch/amplitude). The <span class="pill">openSMILE</span>
+    toolkit standardizes these into well-known feature sets (e.g. eGeMAPS). As with every task
+    in this curriculum, learned embeddings from self-supervised models (wav2vec2 fine-tuned
+    for SER) now generally outperform hand-crafted features on their own.
+  </p>
+
+  <h3>Multimodal fusion</h3>
+  <p>
+    Emotion is carried by both <em>how</em> something is said (prosody) and <em>what</em> is
+    said (word choice, sentiment). Combining an audio model with a text sentiment model
+    (fusing predictions or features) generally beats either alone — though the two signals can
+    also genuinely conflict, as with sarcasm, which remains a hard case for either modality
+    on its own.
+  </p>
+
+  <h2>How it works</h2>
+  <div class="diagram">
+    <div class="step">Audio</div>
+    <div class="arrow">&rarr;</div>
+    <div class="step">Acoustic features<br><span style="font-weight:400">openSMILE / learned embedding</span></div>
+    <div class="arrow">&rarr;</div>
+    <div class="step">Classifier /<br>regressor</div>
+    <div class="arrow">&rarr;</div>
+    <div class="step">Emotion label<br><span style="font-weight:400">or valence-arousal point</span></div>
+  </div>
+
+  <h2>A little history</h2>
+  <ul class="timeline">
+    <li><span class="era">1990s–2000s — Classical ML era</span>SVMs and GMMs trained on
+      hand-crafted prosodic and spectral features become the standard approach.</li>
+    <li><span class="era">2008 — IEMOCAP</span>Released as one of the first large,
+      multimodal, dyadic-interaction emotion datasets — still a major benchmark today.</li>
+    <li><span class="era">2010 — openSMILE</span>Standardizes acoustic feature extraction for
+      paralinguistics, used across the INTERSPEECH Computational Paralinguistics Challenge
+      (ComParE) series.</li>
+    <li><span class="era">Mid-2010s — Deep learning on spectrograms</span>CNNs and LSTMs
+      trained directly on spectrograms start to outperform hand-crafted-feature + SVM
+      pipelines.</li>
+    <li><span class="era">Late 2010s–today — Self-supervised transfer learning</span>Fine-tuned
+      wav2vec2/HuBERT models, often fused with text-sentiment models, become the state of the
+      art.</li>
+  </ul>
+
+  <h2>Tools &amp; libraries</h2>
+  <table>
+    <tr><th>Tool</th><td>Use</td></tr>
+    <tr><td><span class="pill">speechbrain</span></td><td>Pretrained SER models and training recipes</td></tr>
+    <tr><td><span class="pill">wav2vec2 fine-tunes</span></td><td>Self-supervised encoders fine-tuned specifically for emotion classification</td></tr>
+    <tr><td><span class="pill">openSMILE</span></td><td>Standardized classical acoustic feature extraction (eGeMAPS, ComParE)</td></tr>
+  </table>
+
+  <h2>Evaluation</h2>
+  <p>
+    For categorical models: accuracy and F1 per class, though because real data skews heavily
+    toward "neutral," <strong>UAR (Unweighted Average Recall)</strong> — the average of
+    per-class recall, ignoring class size — is the more common research metric, since it
+    doesn't let a lazy "always predict neutral" model look artificially good.
+  </p>
+  <p>
+    For dimensional (valence-arousal) models: <strong>CCC (Concordance Correlation
+    Coefficient)</strong> is the standard, measuring both correlation and agreement in scale
+    between predicted and true continuous values.
+  </p>
+
+  <h2>Further reading</h2>
+  <ul>
+    <li>Busso et al., "IEMOCAP: Interactive Emotional Dyadic Motion Capture Database" (2008)</li>
+    <li>Eyben et al., "The Geneva Minimalistic Acoustic Parameter Set (eGeMAPS)" (2016)</li>
+  </ul>
+
+  <div class="lesson-nav">
+    <a href="07-speaker-verification.html"><span class="dir">Previous</span>07 · Speaker Verification &amp; Identification</a>
+    <a class="next" href="09-text-to-speech.html"><span class="dir">Next</span>09 · Text-to-Speech (TTS)</a>
+  </div>
+</div>

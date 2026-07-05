@@ -1,0 +1,157 @@
+<title>02 · Audio Formats & Conversion</title>
+<link rel="stylesheet" href="assets/style.css">
+
+<div class="page">
+  <a class="back-link" href="00-curriculum.html">&larr; Curriculum</a>
+  <span class="tag foundations">Foundations</span>
+  <h1>02 · Audio Formats &amp; Conversion</h1>
+  <p class="subtitle">The practical map of containers and codecs you'll run into, and how to move between them without silently degrading the signal.</p>
+
+  <h2>Overview</h2>
+  <p>
+    In practice, audio never arrives in the format your model wants. A dataset ships as FLAC,
+    your model wants 16 kHz mono WAV; a scraped clip is an MP3; a phone recording is 8 kHz
+    &micro;-law. Converting between formats looks trivial — one CLI flag — but done carelessly
+    it quietly destroys quality in ways that don't show up until your model's accuracy drops
+    and you can't tell why. This lesson is the map and the checklist.
+  </p>
+
+  <h2>Key concepts</h2>
+
+  <h3>Container vs. codec</h3>
+  <p>
+    A <strong>container</strong> is the file wrapper (metadata + one or more encoded streams).
+    A <strong>codec</strong> is the algorithm that actually encoded the audio inside it. The
+    same extension can hide different codecs, which is the single biggest source of confusion.
+  </p>
+  <table>
+    <tr><th>Container</th><th>Usually holds</th><th>Notes</th></tr>
+    <tr><td><span class="pill">.wav</span></td><td>PCM (uncompressed)</td><td>Can technically hold compressed codecs too, but almost never does in practice</td></tr>
+    <tr><td><span class="pill">.flac</span></td><td>FLAC</td><td>Container and codec are the same thing here</td></tr>
+    <tr><td><span class="pill">.m4a / .mp4</span></td><td>AAC or ALAC</td><td>AAC = lossy, ALAC = lossless — same container, opposite philosophies</td></tr>
+    <tr><td><span class="pill">.ogg</span></td><td>Vorbis or Opus</td><td>Common in open-source and real-time streaming stacks</td></tr>
+    <tr><td><span class="pill">.mp3</span></td><td>MP3</td><td>Container and codec are effectively the same thing here too</td></tr>
+  </table>
+
+  <h3>Lossless vs. lossy</h3>
+  <div class="compare">
+    <div>
+      <h4>Lossless — WAV (PCM), FLAC, ALAC</h4>
+      <p>Stores (or perfectly reconstructs) the exact samples. Larger files, but decoding and
+        re-encoding never loses information. Safe to convert back and forth freely.</p>
+    </div>
+    <div>
+      <h4>Lossy — MP3, AAC, Opus, Vorbis</h4>
+      <p>Throws away detail a psychoacoustic model predicts you won't notice, to shrink file
+        size. That decision can't be undone — decoding a lossy file never recovers what was
+        discarded.</p>
+    </div>
+  </div>
+  <div class="callout warning">
+    <span class="callout-label">Generation loss</span>
+    <p>Re-encoding lossy &rarr; lossy (MP3 &rarr; AAC &rarr; MP3, or even MP3 &rarr; MP3 at a
+      different bitrate) compounds artifacts each pass — like photocopying a photocopy. If a
+      source file is already lossy, decode it once and derive everything else from that
+      decode; never chain lossy re-encodes.</p>
+  </div>
+
+  <h3>Sample-rate conversion (resampling)</h3>
+  <p>
+    Changing the sample rate (e.g. 44.1 kHz &rarr; 16 kHz) means computing new sample values at
+    new time positions. Done right, this applies a low-pass anti-aliasing filter before
+    discarding samples (downsampling) or an interpolation filter when adding them
+    (upsampling). Done naively — just dropping or duplicating samples — it lets frequencies
+    above the new Nyquist limit "fold back" as false low frequencies (aliasing), corrupting
+    the signal in a way that's hard to undo.
+  </p>
+  <div class="callout">
+    <span class="callout-label">Upsampling doesn't add information</span>
+    <p>Converting 8 kHz audio to 16 kHz produces a file that plays back correctly, but it
+      doesn't recover detail that was never captured. Use it for compatibility, not for
+      quality — the real fix is finding a source that was captured at the higher rate.</p>
+  </div>
+
+  <h3>Bit-depth conversion &amp; dithering</h3>
+  <p>
+    Going from 24-bit to 16-bit means representing each sample with less precision. Simple
+    truncation introduces quantization error that's correlated with the signal, which the ear
+    perceives as harsh distortion. <strong>Dithering</strong> adds a tiny, controlled amount of
+    noise before truncating, decorrelating that error from the signal — trading a nearly
+    inaudible noise floor for the removal of harsher, structured distortion.
+  </p>
+
+  <h3>Channel conversion (stereo &rarr; mono)</h3>
+  <p>
+    Most speech/ML pipelines want mono. Naively averaging left and right channels is usually
+    fine, but if the two channels are out of phase (common in some processed music or
+    multi-mic setups), averaging can cancel shared frequencies and leave a thin, hollow-sounding
+    result. Worth a quick listen after downmixing anything that isn't already single-channel
+    speech.
+  </p>
+
+  <h2>How it works: a safe conversion pipeline</h2>
+  <div class="diagram">
+    <div class="step">Source file<br><span style="font-weight:400">(any format)</span></div>
+    <div class="arrow">&rarr;</div>
+    <div class="step">Decode to PCM<br><span style="font-weight:400">once</span></div>
+    <div class="arrow">&rarr;</div>
+    <div class="step">Resample<br><span style="font-weight:400">(filtered)</span></div>
+    <div class="arrow">&rarr;</div>
+    <div class="step">Requantize<br><span style="font-weight:400">(dithered)</span></div>
+    <div class="arrow">&rarr;</div>
+    <div class="step">Encode to target<br><span style="font-weight:400">format</span></div>
+  </div>
+
+  <table>
+    <tr><th>Do</th><th>Don't</th></tr>
+    <tr><td>Keep one lossless master; derive working copies from it</td><td>Re-encode an already-lossy file into another lossy format "to save space"</td></tr>
+    <tr><td>Resample with a proper filtered resampler</td><td>Naively drop or duplicate samples to change rate</td></tr>
+    <tr><td>Dither when reducing bit depth</td><td>Truncate bits and call it done</td></tr>
+    <tr><td>Check sample rate / channel count match what a pretrained model expects</td><td>Assume "it's audio, any format works"</td></tr>
+    <tr><td>Decode a lossy source once, then branch from that decode</td><td>Chain multiple lossy re-encodes across a pipeline</td></tr>
+  </table>
+
+  <h2>A little history</h2>
+  <ul class="timeline">
+    <li><span class="era">1991 — WAV / RIFF</span>Microsoft and IBM's uncompressed PCM
+      container becomes the baseline every other format gets compared against.</li>
+    <li><span class="era">1993 — MP3</span>The first lossy codec good enough for mainstream
+      listening, using a psychoacoustic model to discard sound you're unlikely to notice
+      missing — it made internet audio practical.</li>
+    <li><span class="era">1997 — AAC</span>Designed as MP3's successor: better quality at the
+      same bitrate, later the default for Apple's ecosystem and streaming.</li>
+    <li><span class="era">2001 — FLAC</span>An open, free, lossless codec — compresses like a
+      zip file (losslessly) rather than discarding anything, becoming the standard for
+      archival and dataset distribution.</li>
+    <li><span class="era">2012 — Opus</span>An IETF standard tuned for both real-time,
+      low-latency communication (VoIP, WebRTC) and high compression efficiency — now common in
+      streaming and voice pipelines.</li>
+  </ul>
+
+  <h2>Tools &amp; libraries</h2>
+  <table>
+    <tr><th>Tool</th><td>Use</td></tr>
+    <tr><td><span class="pill">ffmpeg</span></td><td>The universal converter — handles almost every container/codec, resampling, channel remixing</td></tr>
+    <tr><td><span class="pill">sox</span></td><td>"Swiss army knife of audio" — especially good, fine-grained control over resampling and dithering</td></tr>
+    <tr><td><span class="pill">soundfile</span></td><td>Python I/O for PCM-based formats (WAV/FLAC) via libsndfile — not for lossy codecs like MP3</td></tr>
+    <tr><td><span class="pill">pydub</span></td><td>Python wrapper over ffmpeg for scripting conversions and simple edits</td></tr>
+  </table>
+
+  <h2>Evaluation</h2>
+  <p style="color:var(--text-muted)">
+    No standard metric — sanity-check conversions instead: compare a spectrogram of the
+    source and the converted file side by side (aliasing shows up as unexpected energy after
+    conversion), check peak levels for new clipping, and do a quick listen for artifacts.
+  </p>
+
+  <h2>Further reading</h2>
+  <ul>
+    <li>ffmpeg documentation on the <span class="pill">swr</span> (resampling) and audio filter modules</li>
+    <li>Xiph.org's explainers on digital audio and the Opus codec</li>
+  </ul>
+
+  <div class="lesson-nav">
+    <a href="01-foundations.html"><span class="dir">Previous</span>01 · Foundations of Digital Audio</a>
+    <a class="next" href="03-preprocessing.html"><span class="dir">Next</span>03 · Audio Preprocessing &amp; Manipulation</a>
+  </div>
+</div>
