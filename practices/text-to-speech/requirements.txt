@@ -1,0 +1,11 @@
+# torch is deliberately NOT listed here -- see speech-to-text/requirements.txt.
+# (TTS's own dependency metadata wants torch too, but since the base image's
+# torch==2.4.1 already satisfies it, installing shouldn't trigger a reinstall.)
+#
+# PyPI package name note: "TTS" is Coqui's long-standing package
+# (`from TTS.api import TTS`). If it's ever pulled from PyPI, the
+# API-compatible community fork is published as "coqui-tts" -- same import.
+TTS
+fastapi
+uvicorn[standard]
+python-multipart

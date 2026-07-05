@@ -1,0 +1,5 @@
+# torch is deliberately NOT listed here -- see speech-to-text/requirements.txt.
+pyannote.audio
+fastapi
+uvicorn[standard]
+python-multipart

@@ -1,0 +1,12 @@
+# torch is deliberately NOT listed here -- see speech-to-text/requirements.txt.
+# torchaudio IS pinned explicitly: speechbrain depends on it transitively,
+# and without a pin matching the base image's torch==2.4.1, pip's resolver
+# could pull a torchaudio version that forces a torch upgrade/downgrade —
+# exactly the version-mismatch problem this sandbox exists to avoid.
+speechbrain
+torchaudio==2.4.1
+librosa
+soundfile
+fastapi
+uvicorn[standard]
+python-multipart

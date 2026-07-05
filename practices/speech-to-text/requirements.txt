@@ -1,0 +1,8 @@
+# torch is deliberately NOT listed here -- the pytorch/pytorch base image
+# already has it installed, correctly matched to its CUDA/cuDNN build.
+# Installing these with `uv pip install --system` reuses that install
+# instead of pulling a second torch from PyPI.
+openai-whisper
+fastapi
+uvicorn[standard]
+python-multipart

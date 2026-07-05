@@ -1,0 +1,18 @@
+# Practice sandbox runtime data (not source)
+data/*
+!data/.gitkeep
+!data/samples/
+models_cache/
+
+# Env / secrets
+.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.uv/
+
+# OS
+.DS_Store
+Thumbs.db

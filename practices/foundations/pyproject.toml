@@ -1,0 +1,24 @@
+[project]
+name = "foundations"
+version = "0.1.0"
+description = "Practice module for lessons 01-04: sampling, format conversion, preprocessing, feature extraction"
+requires-python = ">=3.11"
+dependencies = [
+    "librosa>=0.10.2",
+    "soundfile>=0.12.1",
+    "pydub>=0.25.1",
+    "noisereduce>=3.0.2",
+    "pyloudnorm>=0.1.1",
+    "matplotlib>=3.8",
+    "numpy>=1.26,<2.0",
+    "scipy>=1.11",
+    "fastapi>=0.111",
+    "uvicorn[standard]>=0.30",
+    "python-multipart>=0.0.9",
+]
+
+# This directory is scripts + a small app, not an installable package —
+# tell uv to just build a venv from `dependencies`, not try to build/install
+# this project itself.
+[tool.uv]
+package = false

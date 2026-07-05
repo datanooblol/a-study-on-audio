@@ -1,0 +1,7 @@
+# torch is deliberately NOT listed here -- see speech-to-text/requirements.txt.
+transformers
+librosa
+soundfile
+fastapi
+uvicorn[standard]
+python-multipart

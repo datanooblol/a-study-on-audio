@@ -1,0 +1,78 @@
+x-gpu: &gpu
+  deploy:
+    resources:
+      reservations:
+        devices:
+          - driver: nvidia
+            count: 1
+            capabilities: ["gpu"]
+
+services:
+  foundations:
+    build: ./practices/foundations
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/data
+
+  speech-to-text:
+    <<: *gpu
+    build: ./practices/speech-to-text
+    ports:
+      - "8001:8000"
+    volumes:
+      - ./data:/data
+      - ./models_cache/speech-to-text:/root/.cache
+    environment:
+      - WHISPER_MODEL=${WHISPER_MODEL:-base}
+
+  diarization:
+    <<: *gpu
+    build: ./practices/diarization
+    ports:
+      - "8002:8000"
+    volumes:
+      - ./data:/data
+      - ./models_cache/diarization:/root/.cache
+    environment:
+      - HF_TOKEN=${HF_TOKEN}
+
+  speaker-verification:
+    <<: *gpu
+    build: ./practices/speaker-verification
+    ports:
+      - "8003:8000"
+    volumes:
+      - ./data:/data
+      - ./models_cache/speaker-verification:/root/.cache
+
+  emotion-recognition:
+    <<: *gpu
+    build: ./practices/emotion-recognition
+    ports:
+      - "8004:8000"
+    volumes:
+      - ./data:/data
+      - ./models_cache/emotion-recognition:/root/.cache
+
+  text-to-speech:
+    <<: *gpu
+    build: ./practices/text-to-speech
+    ports:
+      - "8005:8000"
+    volumes:
+      - ./data:/data
+      - ./models_cache/text-to-speech:/root/.cache
+    environment:
+      - COQUI_TOS_AGREED=1
+
+  voice-cloning:
+    <<: *gpu
+    build: ./practices/voice-cloning
+    ports:
+      - "8006:8000"
+    volumes:
+      - ./data:/data
+      - ./models_cache/voice-cloning:/root/.cache
+    environment:
+      - COQUI_TOS_AGREED=1
