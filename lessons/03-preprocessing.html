@@ -99,13 +99,21 @@
     <div class="arrow">&rarr;</div>
     <div class="step">Trim silence<br><span style="font-weight:400">(VAD)</span></div>
     <div class="arrow">&rarr;</div>
-    <div class="step">Normalize<br><span style="font-weight:400">loudness</span></div>
-    <div class="arrow">&rarr;</div>
     <div class="step">Filter /<br>denoise</div>
+    <div class="arrow">&rarr;</div>
+    <div class="step">Normalize<br><span style="font-weight:400">loudness</span></div>
     <div class="arrow">&rarr;</div>
     <div class="step">Frame &amp;<br>window</div>
     <div class="arrow">&rarr;</div>
     <div class="step">Ready for<br>feature extraction</div>
+  </div>
+  <div class="callout">
+    <span class="callout-label">Order matters</span>
+    <p>Denoise <em>before</em> normalizing loudness, not after. Denoising
+      changes a signal's energy (removing noise energy shifts the overall
+      level), so if you normalize first, denoising just undoes your target
+      loudness. Normalizing last is what makes the final output actually
+      land on the loudness you asked for.</p>
   </div>
 
   <h2>A little history</h2>

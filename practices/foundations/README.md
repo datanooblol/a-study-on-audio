@@ -15,8 +15,12 @@ CPU-only — no GPU needed.
 
 ## 1. Study the code directly (no server, no file upload needed)
 
-Each `core_*.py` runs a self-contained demo against synthetic audio it
-generates itself — no need to supply a file to get started.
+`core_01_sampling.py`, `core_02_conversion.py`, and `core_04_features.py`
+run self-contained demos against synthetic audio they generate themselves —
+no file needed. `core_03_preprocessing.py` uses the checked-in real speech
+sample at `data/samples/hello.wav` (denoising is much more meaningful on
+real speech than a synthetic tone — falls back to a synthetic tone if that
+file is ever missing).
 
 ```
 docker compose build foundations
@@ -49,7 +53,7 @@ curl -X POST http://localhost:8000/convert \
   -F "target_sample_rate=8000" \
   -F "method=naive"
 
-# Lesson 03 — trim/normalize/denoise
+# Lesson 03 — trim, denoise, then normalize loudness (in that order — see the lesson)
 curl -X POST http://localhost:8000/clean -F "file=@data/samples/hello.wav"
 
 # Lesson 04 — extract features
